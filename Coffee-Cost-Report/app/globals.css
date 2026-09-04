@@ -1,0 +1,91 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #f6f4ec;
+  --surface: #ffffff;
+  --surface-2: #fbfaf5;
+  --text: #2b241c;
+  --text-muted: #6b6153;
+  --border: #e4dfd1;
+
+  --preclean: #4b7455;
+  --preclean-soft: #50c799;
+  --preclean-line: #3a5c42;
+
+  --roasting: #a6521b;
+  --roasting-soft: #eab183;
+  --roasting-line: #8a4415;
+
+  --packing: #23959f;
+  --packing-soft: #5bbcd9;
+  --packing-line: #8be2ea;
+
+  --up: #3a7a4a;
+  --down: #b3452f;
+  --shadow-color: 43, 36, 28;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1b1712;
+    --surface: #241f18;
+    --surface-2: #201b15;
+    --text: #efe9dd;
+    --text-muted: #b6ac9a;
+    --border: #3a3327;
+
+    --preclean: #86b98d;
+    --preclean-soft: #2a3628;
+    --preclean-line: #a9d2ae;
+
+    --roasting: #e0965b;
+    --roasting-soft: #3a2c20;
+    --roasting-line: #eab183;
+
+    --packing: #63c2cb;
+    --packing-soft: #1f3436;
+    --packing-line: #8bdae1;
+
+    --up: #6fbf7f;
+    --down: #e08066;
+    --shadow-color: 0, 0, 0;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-border: var(--border);
+
+  --color-preclean: var(--preclean);
+  --color-preclean-soft: var(--preclean-soft);
+  --color-preclean-line: var(--preclean-line);
+
+  --color-roasting: var(--roasting);
+  --color-roasting-soft: var(--roasting-soft);
+  --color-roasting-line: var(--roasting-line);
+
+  --color-packing: var(--packing);
+  --color-packing-soft: var(--packing-soft);
+  --color-packing-line: var(--packing-line);
+
+  --color-up: var(--up);
+  --color-down: var(--down);
+
+  --font-sans: var(--font-sarabun);
+  --font-mono: var(--font-sarabun);
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+}
+
+.shadow-card {
+  box-shadow:
+    0 1px 2px rgba(var(--shadow-color), 0.06),
+    0 6px 20px rgba(var(--shadow-color), 0.06);
+}
