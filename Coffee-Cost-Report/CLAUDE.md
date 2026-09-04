@@ -32,7 +32,7 @@ section is the current-state snapshot; read the daily report for *why*.
 
 **Confirmed with the user**: file upload is the ingestion method for now
 (an RPA job already lands MB51 into a database daily — a future phase
-should read from that directly; [`lib/store.ts`](lib/store.ts) is the
+should read from that directly; [`lib/persistence/store.ts`](lib/persistence/store.ts) is the
 seam for that swap). STD% (301) and unit-weight-per-material (303) are
 both accounting-editable master data with no confirmed business rule
 behind them yet — mirrors how accounting fills them in today. 303/305's
@@ -42,16 +42,16 @@ conversation with production/QA that hasn't happened yet.
 
 **What's implemented, per stage** (all verified against the real
 reference file's actual numbers, not synthetic data):
-- **301 (Preclean)**: full formula set — [`lib/pivotOrderReport.ts`](lib/pivotOrderReport.ts),
+- **301 (Preclean)**: full formula set — [`lib/reports/pivotOrderReport.ts`](lib/reports/pivotOrderReport.ts),
   `Stage301Table.tsx`. Every material an order touches gets its own row
   (role: input/output/neutral) — no merging.
 - **302 (Roasting)**: full formula set, fully MB51-derivable, no manual
-  data needed — [`lib/pivot302.ts`](lib/pivot302.ts), `Stage302Table.tsx`.
+  data needed — [`lib/reports/pivot302.ts`](lib/reports/pivot302.ts), `components/stages/Stage302Table.tsx`.
   A real copy-paste bug was found and *not* reproduced (see
   `docs/source-analysis.md`). Not implemented: the "สูตร FG" cross-reference
   to sheet 303 (no reliable Order→Order mapping exists in MB51).
 - **303 (Packaging)**: core Yield/Loss and price are real and
-  MB51-derivable — [`lib/pivot303.ts`](lib/pivot303.ts), `Stage303Table.tsx`.
+  MB51-derivable — [`lib/reports/pivot303.ts`](lib/reports/pivot303.ts), `components/stages/Stage303Table.tsx`.
   Needs an editable "grams per unit" master value per output material
   (`data/unit-weight-master.json`, `/api/unit-weight`) since MB51 has no
   weight field. Not implemented: the ~20-column manual daily
@@ -59,7 +59,7 @@ reference file's actual numbers, not synthetic data):
   the pending on-site conversation.
 - **305 (retail repacking, "CPR" brand)**: full real formula set, verified
   2026-08-26 against both reference files —
-  [`lib/pivot305.ts`](lib/pivot305.ts), `Stage305Table.tsx`. Same shape as
+  [`lib/reports/pivot305.ts`](lib/reports/pivot305.ts), `components/stages/Stage305Table.tsx`. Same shape as
   303 (one BAG-unit blend input + PC/EA consumables → BAG output), but
   since input *and* output are both bag-counted (not KG), yield needs a
   grams-per-bag weight on **both** sides, not just the output — reuses
@@ -75,7 +75,7 @@ reference file's actual numbers, not synthetic data):
   on-site conversation with production/QA).
 
 **UI**: 4 tabs (301/302/303/305) sharing one upload + month filter
-(parsed from MB51's `Pstng Date`, [`lib/dates.ts`](lib/dates.ts)), each
+(parsed from MB51's `Pstng Date`, [`lib/core/dates.ts`](lib/core/dates.ts)), each
 rendering its own stage-specific table component since 302/303's real
 column sets genuinely differ from 301's. Excel-like styling (grid
 borders, gray header, bold Sum row), expand-all/collapse-all plus a
@@ -105,14 +105,14 @@ User then answered all 4 open questions same day (sheet detection:
 generalize; dashboard scope: include Preclean; grade split: pure material
 code; external SharePoint file: not needed) and PMO implemented it.
 
-**Sheet detection generalized**: `lib/parse.ts` now matches any sheet
+**Sheet detection generalized**: `lib/ingestion/parse.ts` now matches any sheet
 starting with "MB51" instead of hardcoding `"MB51 328"` — both this
 file's `MB51 M. 1-7` and the original file's `MB51 328` upload correctly.
 
 **New Summary Dashboard tab** ("แดชบอร์ดสรุป", first tab): one row per
 month, Preclean → Roasting → Packing, mirroring the reference workbook's
-`Dash` sheet — [`lib/summaryDashboard.ts`](lib/summaryDashboard.ts),
-`components/SummaryDashboardTable.tsx`. Important: this does **not** use
+`Dash` sheet — [`lib/reports/summaryDashboard.ts`](lib/reports/summaryDashboard.ts),
+`components/dashboard/SummaryDashboardTable.tsx`. Important: this does **not** use
 the sign-based input/output inference the 301/302/303 tabs use — that was
 tried first and came out 10–34% off. The dashboard instead classifies
 every row by SLoc + movement type + material code, exactly as `เงื่อนไข`
@@ -142,12 +142,12 @@ richer "Coffee Roasting Performance & Monitoring" dashboard and asked for
 the same look, plus one formula correction: **%Yield 3 = FG ÷ Output
 Roasting** (this month's Roasting output), not ÷ Packing's own netted
 input — the two are usually close but not the same figure by definition.
-Fixed in `lib/summaryDashboard.ts`'s `packingSummary` (now takes
+Fixed in `lib/reports/summaryDashboard.ts`'s `packingSummary` (now takes
 `roastingOutputQuantity` as an explicit parameter for the yield
 denominator; `inputQuantity` — Packing's own consumption — is kept as a
 separate, informational field).
 
-**New**: `components/DashboardOverview.tsx` — 5 KPI cards (grouped by
+**New**: `components/dashboard/DashboardOverview.tsx` — 5 KPI cards (grouped by
 stage, amber/sky/orange) + 3 trend charts (`recharts`, newly added
 dependency) on top of the existing table: `%Yield 1 Trend` (line),
 `Lot Number 1 (Cumulative)` split by variety (Arabica 57000002 / Robusta
@@ -163,7 +163,7 @@ to match the reference (colored group header bands, numbered rows,
 and "%Yield รวม" columns the earlier version added, since the reference
 only shows the combined yield as a KPI card, not a table column).
 
-**Month filter replaced with a range picker**: `components/MonthRangeFilter.tsx`
+**Month filter replaced with a range picker**: `components/filters/MonthRangeFilter.tsx`
 (a `<details>`-based chip + panel, quick presets + explicit from/to
 selects) replaces the old single-month `<select>`. `ReportView.tsx`'s
 `selectedMonth` state became `monthFrom`/`monthTo`, defaulting to the full

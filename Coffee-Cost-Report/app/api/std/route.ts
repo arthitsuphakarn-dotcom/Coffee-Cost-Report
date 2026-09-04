@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { deleteStdMasterEntry, setStdMasterEntry } from "@/lib/store";
+import { deleteStdMasterEntry, setStdMasterEntry } from "@/lib/persistence/store";
 
 const MONTH_KEY_RE = /^\d{4}-\d{2}$/;
 

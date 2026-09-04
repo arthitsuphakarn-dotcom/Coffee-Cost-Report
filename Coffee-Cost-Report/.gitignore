@@ -1,0 +1,17 @@
+# dependencies and build output
+node_modules/
+.next/
+out/
+
+# local environment and secrets
+.env
+.env.*
+!.env.example
+
+# local file-backed application data
+data/
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*

@@ -70,6 +70,7 @@ state is summarized in [`CLAUDE.md`](CLAUDE.md).
 ```
 npm install
 npm run dev
+npm run db:check    # ตรวจสอบการเชื่อมต่อ MySQL และ log ผลใน terminal
 ```
 
 Open http://localhost:3000 (or whatever port it prints), upload an MB51
@@ -78,31 +79,49 @@ column), switch between the 301/302/303/305 tabs, optionally filter by
 month, fill in the editable master fields (STD%, grams/unit) inline, and
 download the computed report as Excel per stage.
 
+## MySQL environment
+
+MySQL connection placeholders are in `.env`; copy `.env.example` when
+setting up another environment and replace the placeholder values:
+
+```env
+DB_HOST=localhost
+DB_PORT=3306
+DB_NAME=coffee_cost_report
+DB_USER=your_mysql_user
+DB_PASSWORD=your_mysql_password
+DATABASE_URL=mysql://your_mysql_user:your_mysql_password@localhost:3306/coffee_cost_report
+DB_CONNECTION_LIMIT=10
+DB_SSL=false
+```
+
+The current Phase 1 application still reads and writes local JSON files in
+`data/`. These variables are prepared for the upcoming database integration;
+the connection pool is available from `lib/database/connection.ts`, but the
+DB query layer and table mapping have not been added yet.
+
 ## Structure
 
 คู่มือโครงสร้างโปรเจกต์ฉบับภาษาไทย (โฟลเดอร์ทีละส่วน + data flow):
 [`docs/คู่มือโครงสร้างโปรเจกต์.md`](docs/%E0%B8%84%E0%B8%B9%E0%B9%88%E0%B8%A1%E0%B8%B7%E0%B8%AD%E0%B9%82%E0%B8%84%E0%B8%A3%E0%B8%87%E0%B8%AA%E0%B8%A3%E0%B9%89%E0%B8%B2%E0%B8%87%E0%B9%82%E0%B8%9B%E0%B8%A3%E0%B9%80%E0%B8%88%E0%B8%81%E0%B8%95%E0%B9%8C.md).
 
 - `app/` — Next.js pages and API routes (`upload`, `std`, `unit-weight`, `export`).
-- `lib/parse.ts` — reads the `MB51 328` sheet into raw rows.
-- `lib/dates.ts` — turns a row's posting date into a "YYYY-MM" month key
+- `lib/ingestion/parse.ts` — reads an MB51 sheet into raw rows.
+- `lib/core/dates.ts` — turns a row's posting date into a "YYYY-MM" month key
   and a Thai month label, for the month filter.
-- `lib/pivotOrderReport.ts` — sheet 301's formulas (also reused as-is for
-  305's still-unreviewed placeholder).
-- `lib/pivot302.ts`, `lib/pivot303.ts` — 302 and 303's own real formulas.
-- `lib/summaryDashboard.ts` — the Summary Dashboard tab's monthly
+- `lib/reports/pivotOrderReport.ts` — sheet 301's formulas.
+- `lib/reports/pivot302.ts`, `pivot303.ts`, `pivot305.ts` — stage-specific formulas.
+- `lib/reports/summaryDashboard.ts` — the Summary Dashboard tab's monthly
   Preclean/Roasting/Packing aggregation (SLoc + movement type + material
   code classification, not sign-based).
-- `lib/exportReport.ts`, `exportReport302.ts`, `exportReport303.ts` —
-  build the downloadable Excel report per stage.
-- `lib/store.ts` — file-backed persistence (uploaded batch, STD% and
+- `lib/exports/` — builders for downloadable Excel reports.
+- `lib/persistence/store.ts` — file-backed persistence (uploaded batch, STD% and
   unit-weight master data); the seam where a future DB-backed data
   source plugs in.
-- `components/Stage301Table.tsx`, `Stage302Table.tsx`, `Stage303Table.tsx`
-  — one table component per stage, since their real column sets differ.
-- `components/DashboardOverview.tsx`, `SummaryDashboardTable.tsx` — the
-  Summary Dashboard tab (KPI cards, charts, table).
-- `components/MonthRangeFilter.tsx` — the from/to month range picker.
+- `components/stages/` — one table component per stage, since their real column sets differ.
+- `components/dashboard/` — the Summary Dashboard tab (KPI cards, charts, table).
+- `components/filters/`, `components/modals/`, `components/summaries/` — supporting UI flows.
+- `components/shared/reportTableStyles.ts` — shared table styles.
 - `docs/source-analysis.md` — full sheet-by-sheet, formula-by-formula
   analysis of the reference workbook, including the two copy-paste bugs
   found in the source file itself.

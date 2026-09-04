@@ -1,4 +1,4 @@
-import { loadLatestUpload, loadStdMaster, loadUnitWeightMaster } from "@/lib/store";
+import { loadLatestUpload, loadStdMaster, loadUnitWeightMaster } from "@/lib/persistence/store";
 import ReportView from "@/components/ReportView";
 
 export default async function Home() {
