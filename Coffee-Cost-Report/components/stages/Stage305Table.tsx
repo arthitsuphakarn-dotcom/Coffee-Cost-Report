@@ -8,7 +8,7 @@ import { inputCell, roleBorder, td, tdNum, tfootCell, tfootNum, th } from "../sh
 
 /**
  * Table for sheet 305's real formulas (ราคาต่อหน่วย/Yield/Loss) — see
- * lib/pivot305.ts. Yield needs a grams-per-bag weight for both the blend
+ * lib/reports/pivot.ts. Yield needs a grams-per-bag weight for both the blend
  * input row and each BAG output row (input and output bag sizes can differ —
  * e.g. one 500g bag repacked into two 250g bags), same confirmed-table/
  * editable-fallback pattern as 303's "น้ำหนัก/หน่วย (g)" column. The source
@@ -82,7 +82,6 @@ export default function Stage305Table({
                   <td className={tdNum}></td>
                   <td className={tdNum}></td>
                   <td className={tdNum}></td>
-                  {/* <td className={tdNum}></td> */}
                   <td className={tdNum}>{formatPercent(group.yield)}</td>
                   <td className={`${tdNum} ${(group.loss ?? 0) > 0.02 ? "text-red-600" : ""}`}>{formatPercent(group.loss)}</td>
                 </tr>
@@ -103,21 +102,6 @@ export default function Stage305Table({
                         <td className={tdNum}>{formatNumber(m.outputG)}</td>
                         <td className={tdNum}>{formatNumber(m.outputKg)}</td>
                         <td className={tdNum}>{formatNumber(m.pricePerKg)}</td>
-                        {/* <td className={tdNum}>
-                          {!editableWeight ? null : FG_UNIT_WEIGHT_GRAMS[m.material] ? (
-                            <span title="น้ำหนักยืนยันแล้ว ไม่แก้ไขในนี้">{formatNumber(FG_UNIT_WEIGHT_GRAMS[m.material], 0)}</span>
-                          ) : (
-                            <input
-                              type="number"
-                              min={1}
-                              step={1}
-                              value={m.unitWeightGrams ?? ""}
-                              onChange={(e) => onUnitWeightChange(m.material, e.target.value)}
-                              placeholder="-"
-                              className={inputCell}
-                            />
-                          )}
-                        </td> */}
                         <td className={tdNum}></td>
                         <td className={tdNum}></td>
                       </tr>

@@ -5,7 +5,7 @@ import { formatNumber, formatPercent } from "@/lib/core/format";
 import type { Order302Report } from "@/lib/core/types";
 import { roleBorder, td, tdNum, tfootCell, tfootNum, th } from "../shared/reportTableStyles";
 
-/** Table for sheet 302's own formulas (ใส่สาร/สัดส่วนผสม/สัดส่วน/ราคาต่อหน่วย/Yield/Loss) — see lib/pivot302.ts. */
+/** Table for sheet 302's own formulas (ใส่สาร/สัดส่วนผสม/สัดส่วน/ราคาต่อหน่วย/Yield/Loss) — see lib/reports/pivot.ts. */
 export default function Stage302Table({
   report,
   collapsed,
@@ -60,16 +60,16 @@ export default function Stage302Table({
                       {isCollapsed ? "▸" : "▾"}
                     </button>
                     <span className="font-mono">{group.order}</span>
-                  </td> {/* order */}
-                  <td className={td}></td> {/* material code */}
-                  <td className={td}></td> {/* material name */}
-                  <td className={td}></td> {/* EUn */}
-                  <td className={tdNum}>{formatNumber(group.residualQuantity)}</td> {/* Quantity */}
-                  <td className={tdNum}>{formatNumber(group.residualAmount)}</td> {/* Amount */}
-                  <td className={tdNum}>{formatNumber(group.totalInputQuantity)}</td> {/* ใส่สาร */}
-                  <td className={tdNum}></td> {/* สัดส่วนผสม */}
-                  <td className={tdNum}>{formatPercent(group.totalMixRatio)}</td> {/* สัดส่วน */}
-                  <td className={tdNum}>{formatNumber(group.totalPricePerKg)}</td> {/* ราคาต่อหน่วย */}
+                  </td>
+                  <td className={td}></td>
+                  <td className={td}></td>
+                  <td className={td}></td>
+                  <td className={tdNum}>{formatNumber(group.residualQuantity)}</td>
+                  <td className={tdNum}>{formatNumber(group.residualAmount)}</td>
+                  <td className={tdNum}>{formatNumber(group.totalInputQuantity)}</td>
+                  <td className={tdNum}></td>
+                  <td className={tdNum}>{formatPercent(group.totalMixRatio)}</td>
+                  <td className={tdNum}>{formatNumber(group.totalPricePerKg)}</td>
                   <td className={tdNum}>{formatPercent(group.yield)}</td>
                   <td className={`${tdNum} ${(group.loss ?? 0) > 0.02 ? "text-red-600" : ""}`}>{formatPercent(group.loss)}</td>
                 </tr>
@@ -84,9 +84,9 @@ export default function Stage302Table({
                       <td className={tdNum}>{formatNumber(m.quantity)}</td>
                       <td className={tdNum}>{formatNumber(m.amount)}</td>
                       <td className={tdNum}></td>
-                      <td className={tdNum}>{formatPercent(m.mixRatio)}</td> {/* สัดส่วนผสม */}
-                      <td className={tdNum}>{formatPercent(m.outputRatio)}</td> {/* สัดส่วน */}
-                      <td className={tdNum}>{formatNumber(m.pricePerKg)}</td> {/* ราคาต่อหน่วย */}
+                      <td className={tdNum}>{formatPercent(m.mixRatio)}</td>
+                      <td className={tdNum}>{formatPercent(m.outputRatio)}</td>
+                      <td className={tdNum}>{formatNumber(m.pricePerKg)}</td>
                       <td className={tdNum}></td>
                       <td className={tdNum}></td>
                     </tr>

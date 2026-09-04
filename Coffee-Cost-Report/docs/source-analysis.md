@@ -116,7 +116,7 @@ Classic copy-paste-without-adjusting-the-anchor error. Implemented the
 evidently-intended self-referencing formula instead of reproducing the
 bug.
 
-**Implemented**: `lib/pivot302.ts` — ใส่สาร/สัดส่วนผสม/สัดส่วน/ราคาต่อหน่วย/
+**Implemented**: `lib/reports/pivot.ts` (`computeOrder302Report`) — ใส่สาร/สัดส่วนผสม/สัดส่วน/ราคาต่อหน่วย/
 Yield/Loss, verified against the source's actual computed numbers for
 multiple orders (see `daily-reports/2026-08-21.md`). Not implemented:
 สูตร FG (fragile cross-reference, see above) and Por Ver (unconfirmed).
@@ -167,7 +167,7 @@ resolved. This whole sub-table is the "web entry form + import function"
 the user asked for as a future phase — still pending the on-site
 conversation with production/QA the project docs already flag as open.
 
-**Implemented**: `lib/pivot303.ts` — input/output pivot, ราคาต่อหน่วย,
+**Implemented**: `lib/reports/pivot.ts` (`computeOrder303Report`) — input/output pivot, ราคาต่อหน่วย,
 Yield/Loss (once unit weight is set), verified against the source's
 actual numbers for order `303000000309` (outputWeightKg=760,
 yield=100%, matching `AK4`/`AJ4` exactly).
@@ -220,7 +220,7 @@ Coffee Bean" / "สูตร Calibrate" rows below the pivot (rows 40-57) — a
 fixed-row BOM/recipe reference table (raw materials per finished bag),
 not part of the per-order report and not derivable per-order from MB51.
 
-**Implemented**: `lib/pivot305.ts` — ราคาต่อหน่วย, weight-based Yield/Loss
+**Implemented**: `lib/reports/pivot.ts` (`computeOrder305Report`) — ราคาต่อหน่วย, weight-based Yield/Loss
 (once unit weight is set for both sides), `components/Stage305Table.tsx`.
 
 ## Business meaning (coffee production flow)
@@ -274,6 +274,6 @@ inventory/COGS and to flag abnormal loss for follow-up.
 
 **Resolved 2026-08-26:**
 - ~~305 hasn't been reviewed yet~~ → reviewed and implemented for real
-  (`lib/pivot305.ts`, `components/Stage305Table.tsx`) — see the "305 —
+  (`lib/reports/pivot.ts`, `components/stages/Stage305Table.tsx`) — see the "305 —
   Retail repacking" section above. Same open item as 303: the manual
   daily defect-log columns still need the on-site conversation.

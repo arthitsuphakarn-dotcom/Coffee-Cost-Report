@@ -89,13 +89,13 @@ export default function Stage301Table({
                     <span className="font-mono">{group.order}</span>
                     
                   </td>
-                  <td className={td}></td> {/* Material Code */}
-                  <td className={td}></td> {/* Material Description */}
-                  <td className={td}></td> {/* EUn */}
+                  <td className={td}></td>
+                  <td className={td}></td>
+                  <td className={td}></td>
                   <td className={tdNum}>{formatNumber(group.residualQuantity)}</td>
                   <td className={tdNum}>{formatNumber(group.residualAmount)}</td>
                   <td className={tdNum}>{formatNumber(group.semiQuantity)}</td>
-                  <td className={tdNum}></td> {/* {formatPercent(group.totalLoss)} */}
+                  <td className={tdNum}></td>
                   <td className={tdNum}></td>
                   <td className={tdNum}>{formatNumber(group.totalStdPercent)}</td>
                   <td className={tdNum}>{formatNumber(group.totalReallocatedCost)}</td>
@@ -141,8 +141,8 @@ export default function Stage301Table({
             <td className={tfootNum}>{formatNumber(totals.semiQuantity)}</td>
             <td className={tfootNum}></td>
             <td className={tfootNum}></td>
-            <td className={tfootNum}></td>{/* {formatNumber(totals.totalStdPercent)} */}
-            <td className={tfootNum}></td>{/* {formatNumber(totals.totalReallocatedCost)} */}
+            <td className={tfootNum}></td>
+            <td className={tfootNum}></td>
             <td className={tfootNum}></td>
             <td className={tfootNum}></td>
             <td className={tfootNum}></td>

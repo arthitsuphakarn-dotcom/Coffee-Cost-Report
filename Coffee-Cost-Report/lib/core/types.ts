@@ -45,7 +45,7 @@ export type UnitWeightMaster = Record<string, number>;
 /**
  * The 4 production-order prefixes from the reference workbook. All 4 now use
  * their own real, verified formulas (see docs/source-analysis.md and
- * lib/pivotOrderReport.ts / pivot302.ts / pivot303.ts / pivot305.ts). 303 and
+ * lib/reports/pivot.ts). 303 and
  * 305 both still have a manual defect-tracking log in the source sheet that
  * needs confirming on-site before it can be reproduced for real.
  */

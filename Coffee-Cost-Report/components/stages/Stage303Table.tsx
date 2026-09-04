@@ -8,7 +8,7 @@ import { inputCell, roleBorder, td, tdNum, tfootCell, tfootNum, th } from "../sh
 
 /**
  * Table for sheet 303's formulas that are actually MB51-derivable
- * (ราคาต่อหน่วย/Yield/Loss) — see lib/pivot303.ts. Yield needs each output
+ * (ราคาต่อหน่วย/Yield/Loss) — see lib/reports/pivot.ts. Yield needs each output
  * material's weight per unit (grams/bag), which isn't in MB51 — 8 of the 15
  * FG codes have a confirmed weight (`FG_UNIT_WEIGHT_GRAMS`, given by the
  * user 2026-08-21) shown as plain text here since it's fixed, not editable;
@@ -77,7 +77,6 @@ export default function Stage303Table({
                   <td className={tdNum}>{formatNumber(group.residualQuantity)}</td>
                   <td className={tdNum}>{formatNumber(group.residualAmount)}</td>
                   <td className={tdNum}></td>
-                  {/* <td className={tdNum}></td> */}
                   <td className={tdNum}>{formatPercent(group.yield)}</td>
                   <td className={`${tdNum} ${(group.loss ?? 0) > 0.02 ? "text-red-600" : ""}`}>{formatPercent(group.loss)}</td>
                 </tr>
@@ -92,21 +91,6 @@ export default function Stage303Table({
                       <td className={tdNum}>{formatNumber(m.quantity)}</td>
                       <td className={tdNum}>{formatNumber(m.amount)}</td>
                       <td className={tdNum}>{formatNumber(m.pricePerKg)}</td>
-                      {/* <td className={tdNum}>
-                        {m.role !== "output" ? null : FG_UNIT_WEIGHT_GRAMS[m.material] ? (
-                          <span title="น้ำหนักยืนยันแล้ว ไม่แก้ไขในนี้">{formatNumber(FG_UNIT_WEIGHT_GRAMS[m.material], 0)}</span>
-                        ) : (
-                          <input
-                            type="number"
-                            min={1}
-                            step={1}
-                            value={m.unitWeightGrams ?? ""}
-                            onChange={(e) => onUnitWeightChange(m.material, e.target.value)}
-                            placeholder="-"
-                            className={inputCell}
-                          />
-                        )}
-                      </td> */}
                       <td className={tdNum}></td>
                       <td className={tdNum}></td>
                     </tr>

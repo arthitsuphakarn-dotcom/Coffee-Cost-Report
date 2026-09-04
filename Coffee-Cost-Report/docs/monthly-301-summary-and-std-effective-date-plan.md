@@ -116,7 +116,7 @@ Rule / %Yield / %Loss)
 | `lib/types.ts` | `StdMaster` : `Record<string,number>` → `Record<string, StdEntry[]>` (+`StdEntry={from,value}`) | **breaking type** กระเทือนทุกที่ที่อ้าง |
 | `lib/store.ts` | `loadStdMaster` (migrate ตอนอ่าน), `setStdMasterEntry(material, from, value)`, เพิ่ม `deleteStdMasterEntry`, เพิ่ม `stdPercentAsOf()` (หรือแยกไป `lib/stdMaster.ts`) | กลาง |
 | `app/api/std/route.ts` | body: `{material, stdPercent}` → `{material, from, value}` + เพิ่ม DELETE | เล็ก |
-| `lib/pivotOrderReport.ts` | `stdMaster[material]` (บรรทัด 66, 84) → `stdPercentAsOf(stdMaster, material, orderMonth)` ; ต้องรู้เดือนของ order จาก `postingDate` | กลาง |
+| `lib/reports/pivot.ts` | `stdMaster[material]` (บรรทัด 66, 84) → `stdPercentAsOf(stdMaster, material, orderMonth)` ; ต้องรู้เดือนของ order จาก `postingDate` | กลาง |
 | `lib/exportReport.ts` | ใช้ค่าจาก `report` ที่ resolve แล้ว → **ไม่ต้องแก้** | – |
 | `app/api/export/route.ts` | ส่ง `stdMaster` เข้า `computeOrderReport` เหมือนเดิม (แค่ signature เปลี่ยน) | เล็ก |
 | `components/Stage301Table.tsx` | `<input>` %STD ต่อแถว → **read-only แสดงค่า ณ เดือน order** + ทำหัวคอลัมน์ `%STD` เป็นปุ่มเปิด modal จัดการ (`onOpenStdManager`) — แพตเทิร์นเดียวกับปุ่ม Settlement Rule ที่เพิ่งทำ | กลาง |

@@ -42,16 +42,16 @@ conversation with production/QA that hasn't happened yet.
 
 **What's implemented, per stage** (all verified against the real
 reference file's actual numbers, not synthetic data):
-- **301 (Preclean)**: full formula set — [`lib/reports/pivotOrderReport.ts`](lib/reports/pivotOrderReport.ts),
+- **301 (Preclean)**: full formula set — [`lib/reports/pivot.ts`](lib/reports/pivot.ts),
   `Stage301Table.tsx`. Every material an order touches gets its own row
   (role: input/output/neutral) — no merging.
 - **302 (Roasting)**: full formula set, fully MB51-derivable, no manual
-  data needed — [`lib/reports/pivot302.ts`](lib/reports/pivot302.ts), `components/stages/Stage302Table.tsx`.
+  data needed — [`lib/reports/pivot.ts`](lib/reports/pivot.ts), `components/stages/Stage302Table.tsx`.
   A real copy-paste bug was found and *not* reproduced (see
   `docs/source-analysis.md`). Not implemented: the "สูตร FG" cross-reference
   to sheet 303 (no reliable Order→Order mapping exists in MB51).
 - **303 (Packaging)**: core Yield/Loss and price are real and
-  MB51-derivable — [`lib/reports/pivot303.ts`](lib/reports/pivot303.ts), `components/stages/Stage303Table.tsx`.
+  MB51-derivable — [`lib/reports/pivot.ts`](lib/reports/pivot.ts), `components/stages/Stage303Table.tsx`.
   Needs an editable "grams per unit" master value per output material
   (`data/unit-weight-master.json`, `/api/unit-weight`) since MB51 has no
   weight field. Not implemented: the ~20-column manual daily
@@ -59,7 +59,7 @@ reference file's actual numbers, not synthetic data):
   the pending on-site conversation.
 - **305 (retail repacking, "CPR" brand)**: full real formula set, verified
   2026-08-26 against both reference files —
-  [`lib/reports/pivot305.ts`](lib/reports/pivot305.ts), `components/stages/Stage305Table.tsx`. Same shape as
+  [`lib/reports/pivot.ts`](lib/reports/pivot.ts), `components/stages/Stage305Table.tsx`. Same shape as
   303 (one BAG-unit blend input + PC/EA consumables → BAG output), but
   since input *and* output are both bag-counted (not KG), yield needs a
   grams-per-bag weight on **both** sides, not just the output — reuses
@@ -222,7 +222,7 @@ for those 8 codes. New [`lib/fgUnitWeights.ts`](lib/fgUnitWeights.ts)
   `PackingMonthSummary.missingUnitWeight` replaced with
   `excludedMaterials: string[]` (informational, not a warning — nothing is
   "missing," it's a confirmed exclusion).
-- **303 tab** (`lib/pivot303.ts`, `Stage303Table.tsx`): confirmed table
+- **303 tab** (`lib/reports/pivot.ts`, `components/stages/Stage303Table.tsx`): confirmed table
   first, falls back to the editable `UnitWeightMaster` for anything else —
   the per-order tab stays usable for materials outside the confirmed 8.
   Confirmed materials now render as plain text (not an editable input) in
@@ -341,7 +341,7 @@ actually structurally identical to 303 (blend input + PC/EA packaging
 consumables → bag output), with the added wrinkle that input and output
 bag sizes aren't always equal (some orders repack one 500g bag into two
 250g bags) — a bag-count ratio would show 200% there. Implemented a real
-weight-based Yield/Loss instead (`lib/pivot305.ts`, new
+weight-based Yield/Loss instead (`lib/reports/pivot.ts`, new
 `components/Stage305Table.tsx`, `lib/exportReport305.ts`), reusing
 `FG_UNIT_WEIGHT_GRAMS` + the editable `UnitWeightMaster` fallback for
 *both* the input and output side (303 only ever needed it for the output,
@@ -459,7 +459,7 @@ master data**: `StdMaster` (`lib/types.ts`) changed from
 `stdPercentAsOf`/`latestStdPercent`; `lib/store.ts` auto-migrates old scalar
 values to a single sentinel-dated entry (`from = "0000-01"`, sorts before
 any real month) on read, so every past month keeps resolving to what it
-always did. `lib/pivotOrderReport.ts` resolves each order's %STD against
+always did. `lib/reports/pivot.ts` resolves each order's %STD against
 its **earliest** posting month (handles the rare month-crossing order).
 `Stage301Table.tsx`'s %STD column is now read-only; its header opens a new
 change-log modal, `components/StdManagerModal.tsx` (list history + add/

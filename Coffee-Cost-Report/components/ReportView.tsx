@@ -1,10 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import { computeOrderReport } from "@/lib/reports/pivotOrderReport";
-import { computeOrder302Report } from "@/lib/reports/pivot302";
-import { computeOrder303Report } from "@/lib/reports/pivot303";
-import { computeOrder305Report } from "@/lib/reports/pivot305";
+import { computeOrderReport, computeOrder302Report, computeOrder303Report, computeOrder305Report } from "@/lib/reports/pivot";
 import { computeSettlementRuleReport } from "@/lib/reports/settlementRuleReport";
 import { computeMonthly301Summary } from "@/lib/reports/monthly301Summary";
 import { formatMonthLabel, monthKeyOf } from "@/lib/core/dates";

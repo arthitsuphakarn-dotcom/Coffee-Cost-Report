@@ -35,13 +35,10 @@ MB51's `Batch` column), and a restyled Production Summary table. The
 month filter became a range picker (from/to, with quick presets) instead
 of a single-month dropdown.
 
-**301, 302, and 303 are implemented with their own real, verified
-formulas** — each stage turned out to compute genuinely different things
+**301, 302, 303, and 305 are implemented with their own real, verified
+formulas** — each stage computes according to its own production process
 (301: STD-based cost reallocation; 302: blend-mix and output ratios; 303:
-weight-based yield), not one template reused four times, and each was
-checked against the source file's actual numbers before being trusted.
-**305 hasn't been reviewed yet** and still runs on 301's placeholder
-logic (marked with a "รอสูตรจริง" badge in the UI).
+weight-based yield; 305: weight-based repacking yield).
 
 What's still explicitly out of scope, pending an on-site conversation
 with production/QA the user has mentioned but not yet had: 303's ~20
@@ -71,6 +68,7 @@ state is summarized in [`CLAUDE.md`](CLAUDE.md).
 npm install
 npm run dev
 npm run db:check    # ตรวจสอบการเชื่อมต่อ MySQL และ log ผลใน terminal
+npm run mock:import-csv # สร้าง mock data จาก Reference-File/mb51_plant0328.csv
 ```
 
 Open http://localhost:3000 (or whatever port it prints), upload an MB51
@@ -105,25 +103,14 @@ DB query layer and table mapping have not been added yet.
 คู่มือโครงสร้างโปรเจกต์ฉบับภาษาไทย (โฟลเดอร์ทีละส่วน + data flow):
 [`docs/คู่มือโครงสร้างโปรเจกต์.md`](docs/%E0%B8%84%E0%B8%B9%E0%B9%88%E0%B8%A1%E0%B8%B7%E0%B8%AD%E0%B9%82%E0%B8%84%E0%B8%A3%E0%B8%87%E0%B8%AA%E0%B8%A3%E0%B9%89%E0%B8%B2%E0%B8%87%E0%B9%82%E0%B8%9B%E0%B8%A3%E0%B9%80%E0%B8%88%E0%B8%81%E0%B8%95%E0%B9%8C.md).
 
-- `app/` — Next.js pages and API routes (`upload`, `std`, `unit-weight`, `export`).
-- `lib/ingestion/parse.ts` — reads an MB51 sheet into raw rows.
-- `lib/core/dates.ts` — turns a row's posting date into a "YYYY-MM" month key
-  and a Thai month label, for the month filter.
-- `lib/reports/pivotOrderReport.ts` — sheet 301's formulas.
-- `lib/reports/pivot302.ts`, `pivot303.ts`, `pivot305.ts` — stage-specific formulas.
-- `lib/reports/summaryDashboard.ts` — the Summary Dashboard tab's monthly
-  Preclean/Roasting/Packing aggregation (SLoc + movement type + material
-  code classification, not sign-based).
-- `lib/exports/` — builders for downloadable Excel reports.
-- `lib/persistence/store.ts` — file-backed persistence (uploaded batch, STD% and
-  unit-weight master data); the seam where a future DB-backed data
-  source plugs in.
-- `components/stages/` — one table component per stage, since their real column sets differ.
-- `components/dashboard/` — the Summary Dashboard tab (KPI cards, charts, table).
-- `components/filters/`, `components/modals/`, `components/summaries/` — supporting UI flows.
-- `components/shared/reportTableStyles.ts` — shared table styles.
-- `docs/source-analysis.md` — full sheet-by-sheet, formula-by-formula
-  analysis of the reference workbook, including the two copy-paste bugs
-  found in the source file itself.
-- `.claude/agents/coffee-cost-report-ba.md` — BA Project Owner.
-- `daily-reports/` — per-session progress log.
+- `app/` — Next.js pages and API routes for upload, master data and export.
+- `components/` — UI components grouped into dashboard, stages, filters, modals, summaries and shared styles.
+- `lib/core/` — shared types, date/number formatting and master constants.
+- `lib/database/` — MySQL connection pool.
+- `lib/ingestion/` — parser for MB51 input data.
+- `lib/persistence/` — JSON file storage used in Phase 1.
+- `lib/reports/` — pivot calculations and Dashboard calculations.
+- `lib/exports/` — Excel workbook builders.
+- `scripts/` — database check and CSV-to-JSON mock data tools.
+- `data/` — local runtime data; ignored by Git.
+- `docs/` — formula analysis and project structure documentation.
