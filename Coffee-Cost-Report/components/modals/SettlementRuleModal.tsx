@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFileExcel, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { formatNumber } from "@/lib/core/format";
+import { apiUrl } from "@/lib/core/basePath";
 import type { SettlementRuleReport } from "@/lib/reports/settlementRuleReport";
 import { td, tdNum, th } from "../shared/reportTableStyles";
 
@@ -68,7 +69,7 @@ export default function SettlementRuleModal({
           <h2 className="text-base font-bold text-text">Settlement Rule Report</h2>
           <div className="flex items-center gap-2">
             <a
-              href="/api/export-settlement-rule"
+              href={apiUrl("/api/export-settlement-rule")}
               className="inline-flex items-center gap-1 rounded-full bg-green-700 px-4 py-1 text-sm font-medium text-white hover:bg-green-800"
             >
               <FontAwesomeIcon icon={faFileExcel} />

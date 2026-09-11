@@ -114,7 +114,7 @@ export default function Stage305Table({
         <tfoot>
           <tr>
             <td className={tfootCell} colSpan={5}>
-              รวมทั้งหมด ({report.groups.length} Order)
+              รวมทั้งหมด ({report.groups.length} Order · {report.groups.reduce((n, g) => n + g.lines.length, 0)} รายการ)
             </td>
             <td className={tfootNum}>{formatNumber(totals.residualQuantity)}</td>
             <td className={tfootNum}>{formatNumber(totals.residualAmount)}</td>

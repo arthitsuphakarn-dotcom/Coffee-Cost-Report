@@ -5,8 +5,9 @@ import { computeOrderReport, computeOrder302Report, computeOrder303Report, compu
 import { computeSettlementRuleReport } from "@/lib/reports/settlementRuleReport";
 import { computeMonthly301Summary } from "@/lib/reports/monthly301Summary";
 import { formatMonthLabel, monthKeyOf } from "@/lib/core/dates";
+import { apiUrl } from "@/lib/core/basePath";
 import { STAGE_LABELS, STAGE_PREFIXES } from "@/lib/core/types";
-import type { StagePrefix, StdMaster, UnitWeightMaster, UploadBatch } from "@/lib/core/types";
+import type { RawMovementRow, StagePrefix, StdMaster, UnitWeightMaster } from "@/lib/core/types";
 import Stage301Table from "./stages/Stage301Table";
 import Stage302Table from "./stages/Stage302Table";
 import Stage303Table from "./stages/Stage303Table";
@@ -21,15 +22,19 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFileExcel } from "@fortawesome/free-solid-svg-icons";
 
 export default function ReportView({
-  initialBatch,
+  rows,
+  skippedRows,
+  loadError,
   initialStdMaster,
   initialUnitWeightMaster,
 }: {
-  initialBatch: UploadBatch | null;
+  /** MB51 ทุก stage — compute แต่ละตัวกรอง stage ของตัวเอง */
+  rows: RawMovementRow[];
+  skippedRows: number;
+  loadError: string | null;
   initialStdMaster: StdMaster;
   initialUnitWeightMaster: UnitWeightMaster;
 }) {
-  const batch = initialBatch;
   const [stdMaster, setStdMaster] = useState(initialStdMaster);
   const [unitWeightMaster, setUnitWeightMaster] = useState(initialUnitWeightMaster);
   const [activeStage, setActiveStage] = useState<StagePrefix>("301");
@@ -38,51 +43,71 @@ export default function ReportView({
   const [stdManagerOpen, setStdManagerOpen] = useState(false);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   // const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
+  // const [uploadError, setUploadError] = useState<string | null>(null);
   // const fileInputRef = useRef<HTMLInputElement>(null);
   const unitWeightSaveTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
+  // ไล่ทุกเดือนจากเก่าสุดถึงใหม่สุดในข้อมูล (เดือนที่ไม่มี movement ก็ยังเลือกได้)
   const availableMonths = useMemo(() => {
-    if (!batch) return [];
-    const keys = new Set(batch.rows.map((r) => monthKeyOf(r.postingDate)));
-    return Array.from(keys).sort();
-  }, [batch]);
+    if (rows.length === 0) return [];
 
-  const [monthFrom, setMonthFrom] = useState<string>(() => availableMonths[0] ?? "");
-  const [monthTo, setMonthTo] = useState<string>(() => availableMonths[availableMonths.length - 1] ?? "");
+    let oldest = monthKeyOf(rows[0].postingDate);
+    let newest = oldest;
+    for (const r of rows) {
+      const mk = monthKeyOf(r.postingDate);
+      if (mk < oldest) oldest = mk;
+      if (mk > newest) newest = mk;
+    }
+
+    const months: string[] = [];
+    let [year, month] = oldest.split("-").map(Number);
+    const [endYear, endMonth] = newest.split("-").map(Number);
+    while (year < endYear || (year === endYear && month <= endMonth)) {
+      months.push(`${year}-${String(month).padStart(2, "0")}`);
+      if (month === 12) {
+        year += 1;
+        month = 1;
+      } else {
+        month += 1;
+      }
+    }
+    return months;
+  }, [rows]);
+
+  // ที่ผู้ใช้เลือกจริง ("" = ยังไม่เลือก) ค่าที่ใช้จริงคำนวณด้านล่าง
+  const [pickedMonthFrom, setPickedMonthFrom] = useState<string>("");
+  const [pickedMonthTo, setPickedMonthTo] = useState<string>("");
+
+  const monthFrom = pickedMonthFrom && availableMonths.includes(pickedMonthFrom) ? pickedMonthFrom : availableMonths[0] ?? "";
+  const monthTo =
+    pickedMonthTo && availableMonths.includes(pickedMonthTo)
+      ? pickedMonthTo
+      : availableMonths[availableMonths.length - 1] ?? "";
 
   const filteredRows = useMemo(() => {
-    if (!batch) return [];
-    if (!monthFrom || !monthTo) return batch.rows;
-    return batch.rows.filter((r) => {
+    if (!monthFrom || !monthTo) return rows;
+    return rows.filter((r) => {
       const mk = monthKeyOf(r.postingDate);
       return mk >= monthFrom && mk <= monthTo;
     });
-  }, [batch, monthFrom, monthTo]);
+  }, [rows, monthFrom, monthTo]);
 
-  const report301 = useMemo(() => (batch ? computeOrderReport("301", filteredRows, stdMaster) : null), [batch, filteredRows, stdMaster]);
-  const report302 = useMemo(() => (batch ? computeOrder302Report(filteredRows) : null), [batch, filteredRows]);
+  const report301 = useMemo(() => computeOrderReport("301", filteredRows, stdMaster), [filteredRows, stdMaster]);
+  const report302 = useMemo(() => computeOrder302Report(filteredRows), [filteredRows]);
   const report303 = useMemo(
-    () => (batch ? computeOrder303Report(filteredRows, unitWeightMaster) : null),
-    [batch, filteredRows, unitWeightMaster]
+    () => computeOrder303Report(filteredRows, unitWeightMaster),
+    [filteredRows, unitWeightMaster]
   );
   const report305 = useMemo(
-    () => (batch ? computeOrder305Report(filteredRows, unitWeightMaster) : null),
-    [batch, filteredRows, unitWeightMaster]
+    () => computeOrder305Report(filteredRows, unitWeightMaster),
+    [filteredRows, unitWeightMaster]
   );
-  // Yearly cross-tab — deliberately built from the full upload, not the
-  // month-range-filtered rows (see lib/settlementRuleReport.ts).
-  const settlementRuleReport = useMemo(
-    () => (batch ? computeSettlementRuleReport(batch.rows, stdMaster) : null),
-    [batch, stdMaster]
-  );
-  // Follows the top month-range filter (uses filteredRows), so the monthly
-  // summary above the 301 order table always matches what's filtered.
+  // cross-tab รายปี ใช้ rows ทั้งหมด ไม่กรองเดือน
+  const settlementRuleReport = useMemo(() => computeSettlementRuleReport(rows, stdMaster), [rows, stdMaster]);
+  // arg 3 = set เต็ม ไว้หาชื่อ material ที่ไม่มี movement ในช่วงที่กรอง
   const monthly301Summary = useMemo(
-    // 3rd arg = full upload for description lookup, so a grade with no
-    // movement in the filtered range still shows its real name, not the code.
-    () => (batch ? computeMonthly301Summary(filteredRows, stdMaster, batch.rows) : null),
-    [batch, filteredRows, stdMaster]
+    () => computeMonthly301Summary(filteredRows, stdMaster, rows),
+    [filteredRows, rows, stdMaster]
   );
   const dashboardDateRangeLabel = useMemo(() => {
     if (!monthFrom || !monthTo) return "";
@@ -92,12 +117,12 @@ export default function ReportView({
   }, [monthFrom, monthTo]);
 
   const groupCounts: Record<StagePrefix, number> = {
-    "301": report301?.groups.length ?? 0,
-    "302": report302?.groups.length ?? 0,
-    "303": report303?.groups.length ?? 0,
-    "305": report305?.groups.length ?? 0,
+    "301": report301.groups.length,
+    "302": report302.groups.length,
+    "303": report303.groups.length,
+    "305": report305.groups.length,
   };
-  const hasAnyData = batch !== null;
+  const hasAnyData = rows.length > 0;
 
   // async function handleUpload(e: React.FormEvent<HTMLFormElement>) {
   //   e.preventDefault();
@@ -109,7 +134,7 @@ export default function ReportView({
   //   try {
   //     const formData = new FormData();
   //     formData.append("file", file);
-  //     const res = await fetch("/api/upload", { method: "POST", body: formData });
+  //     const res = await fetch(apiUrl("/api/upload"), { method: "POST", body: formData });
   //     const data = await res.json();
   //     if (!res.ok) {
   //       setUploadError(data.error ?? "อัปโหลดไม่สำเร็จ");
@@ -132,7 +157,7 @@ export default function ReportView({
       return { ...prev, [material]: [...withoutSameMonth, { from, value }].sort((a, b) => a.from.localeCompare(b.from)) };
     });
 
-    fetch("/api/std", {
+    fetch(apiUrl("/api/std"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ material, from, value }),
@@ -142,7 +167,7 @@ export default function ReportView({
   function handleStdEntryDelete(material: string, from: string) {
     setStdMaster((prev) => ({ ...prev, [material]: (prev[material] ?? []).filter((e) => e.from !== from) }));
 
-    fetch("/api/std", {
+    fetch(apiUrl("/api/std"), {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ material, from }),
@@ -157,7 +182,7 @@ export default function ReportView({
 
     if (unitWeightSaveTimers.current[material]) clearTimeout(unitWeightSaveTimers.current[material]);
     unitWeightSaveTimers.current[material] = setTimeout(() => {
-      fetch("/api/unit-weight", {
+      fetch(apiUrl("/api/unit-weight"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ material, grams: parsed }),
@@ -225,13 +250,12 @@ export default function ReportView({
             </span>
           )}
         </form> */}
-        {uploadError && <p className="mt-2 text-sm text-down">{uploadError}</p>}
         {/* <p className="mt-2 text-xs text-text-muted">
           ต้องมี sheet ที่ชื่อขึ้นต้นด้วย &quot;MB51&quot; (เช่น &quot;MB51 328&quot;, &quot;MB51 M. 1-7&quot;) พร้อมคอลัมน์ Material,
           Material description, Order, EUn, Quantity in UnE, Amt.in Loc.Cur., Pstng Date
         </p> */}
 
-        {batch && availableMonths.length > 0 && (
+        {availableMonths.length > 0 && (
           <div className="flex flex-wrap items-center justify-between gap-3 ">
             {/* mt-4 border-t border-border pt-3 */}
             {/* <span className="text-xs text-text-muted">
@@ -242,15 +266,28 @@ export default function ReportView({
               Coffee Roasting Performance Monitoring &amp; Cost Report
             </h1>
             {availableMonths.length > 1 && (
-              <MonthRangeFilter availableMonths={availableMonths} from={monthFrom} to={monthTo} onChange={(f, t) => { setMonthFrom(f); setMonthTo(t); }} />
+              <MonthRangeFilter availableMonths={availableMonths} from={monthFrom} to={monthTo} onChange={(f, t) => { setPickedMonthFrom(f); setPickedMonthTo(t); }} />
             )}
           </div>
         )}
       </section>
 
-      {!hasAnyData && (
+      {loadError && (
+        <section className="mb-4 rounded-xl border border-down bg-surface p-10 text-center text-sm text-down">
+          {loadError}
+        </section>
+      )}
+
+      {skippedRows > 0 && (
+        <section className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-xs text-amber-900">
+          ข้าม {skippedRows.toLocaleString("th-TH")} แถวจากฐานข้อมูล เพราะข้อมูลจำเป็นไม่ครบ (Order, Material, Quantity,
+          Amount หรือ Posting Date) — ตัวเลขในรายงานจึงน้อยกว่าที่มีจริงใน SAP
+        </section>
+      )}
+
+      {!hasAnyData && !loadError && (
         <section className="rounded-xl border border-dashed border-border bg-surface p-10 text-center text-sm text-text-muted">
-          ยังไม่มีข้อมูล — อัปโหลดไฟล์ MB51 ด้านบนเพื่อเริ่มดูรายงาน
+          ไม่พบข้อมูล MB51 ในฐานข้อมูล
         </section>
       )}
 
@@ -354,7 +391,7 @@ export default function ReportView({
                   </button>
                 </div>
                 <a
-                  href={`/api/export?stage=${activeStage}&from=${monthFrom}&to=${monthTo}`}
+                  href={apiUrl(`/api/export?stage=${activeStage}&from=${monthFrom}&to=${monthTo}`)}
                   className="inline-flex items-center gap-1 rounded-full bg-green-700 px-4 py-1 text-sm font-medium text-white hover:bg-green-800"
                 >
                   <FontAwesomeIcon icon={faFileExcel} />
@@ -364,7 +401,7 @@ export default function ReportView({
 
               {groupCounts[activeStage] === 0 ? (
                 <div className="rounded-lg border border-dashed border-border bg-surface p-10 text-center text-sm text-text-muted">
-                  ไม่พบ Order ที่ขึ้นต้นด้วย {activeStage} ในไฟล์ที่อัปโหลด
+                  ไม่พบ Order ที่ขึ้นต้นด้วย {activeStage} ในฐานข้อมูล
                 </div>
               ) : activeStage === "301" && report301 ? (
                 <Stage301Table

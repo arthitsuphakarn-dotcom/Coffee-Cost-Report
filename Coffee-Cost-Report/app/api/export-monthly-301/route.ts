@@ -3,34 +3,37 @@ import * as XLSX from "xlsx";
 import { computeMonthly301Summary } from "@/lib/reports/monthly301Summary";
 import { buildMonthly301Workbook } from "@/lib/exports/exportMonthly301Summary";
 import { monthKeyOf } from "@/lib/core/dates";
-import { loadLatestUpload, loadStdMaster } from "@/lib/persistence/store";
+import { loadStdMaster } from "@/lib/persistence/store";
+import { findMovements } from "@/lib/database/mb51Repository";
 
-/**
- * "สรุปรายเดือน 301" export. `?from=YYYY-MM&to=YYYY-MM` narrows to that
- * month range (mirrors the report page's top filter, which is what drives
- * the on-screen summary); omit both to export every month in the upload.
- */
+/** Export "สรุปรายเดือน 301" — ?from=&to=YYYY-MM ไม่ใส่ = ทุกเดือน */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const from = searchParams.get("from");
-  const to = searchParams.get("to");
+  const from = searchParams.get("from") ?? undefined;
+  const to = searchParams.get("to") ?? undefined;
 
-  const [batch, stdMaster] = await Promise.all([loadLatestUpload(), loadStdMaster()]);
-  if (!batch) {
-    return NextResponse.json({ error: "ยังไม่มีข้อมูลที่อัปโหลด" }, { status: 404 });
+  let allRows, stdMaster;
+  try {
+    // อ่านทั้ง stage รอบเดียว เพราะต้องใช้ทั้งช่วงที่เลือกและ set เต็ม (หาชื่อ material)
+    [{ rows: allRows }, stdMaster] = await Promise.all([findMovements({ stages: ["301"] }), loadStdMaster()]);
+  } catch (error) {
+    console.error("[GET /api/export-monthly-301]", error);
+    return NextResponse.json({ error: "ไม่สามารถโหลดข้อมูลได้ กรุณาลองใหม่อีกครั้ง" }, { status: 500 });
   }
 
-  const rows =
+  if (allRows.length === 0) {
+    return NextResponse.json({ error: "ไม่พบข้อมูล 301 ในฐานข้อมูล" }, { status: 404 });
+  }
+
+  const rangeRows =
     from && to
-      ? batch.rows.filter((r) => {
+      ? allRows.filter((r) => {
           const mk = monthKeyOf(r.postingDate);
           return mk >= from && mk <= to;
         })
-      : batch.rows;
+      : allRows;
 
-  // 3rd arg = full upload for description lookup (rows may be a narrowed
-  // month range that omits a grade entirely — it still gets a row).
-  const summary = computeMonthly301Summary(rows, stdMaster, batch.rows);
+  const summary = computeMonthly301Summary(rangeRows, stdMaster, allRows);
   const workbook = buildMonthly301Workbook(summary);
 
   const arrayBuffer = XLSX.write(workbook, { type: "array", bookType: "xlsx" }) as ArrayBuffer;

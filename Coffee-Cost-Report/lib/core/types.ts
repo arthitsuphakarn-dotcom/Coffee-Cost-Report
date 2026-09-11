@@ -5,19 +5,11 @@ export interface RawMovementRow {
   eun: string;
   quantity: number;
   amount: number;
-  /** From MB51's "Pstng Date" column, as "YYYY-MM-DD". */
   postingDate: string;
-  /** MB51's "SLoc" (storage location) — needed by the Summary Dashboard's
-   * material-movement classification (see lib/summaryDashboard.ts). */
   sLoc: string;
-  /** MB51's "MvT" (movement type), e.g. "261" (goods issue), "101" (goods
-   * receipt) — same use as sLoc. */
   mvt: string;
-  /** MB51's "Batch" column, e.g. "130825-TTW". Only used to derive the
-   * supplier code (see lib/summaryDashboard.ts's extractSupplier) for the
-   * Summary Dashboard's by-supplier chart — optional column, defaults to
-   * "" if the sheet doesn't have it. */
   batch: string;
+  plant: string;
 }
 
 export interface UploadBatch {
@@ -93,7 +85,10 @@ export interface OrderGroup {
    * same small residual the source Excel's own "{order} Sum" row shows
    * (mass-balance check: input + all outputs, near zero). */
   inputSemiQuantity: number;
-  totalReallocatedCost: number;
+  /** Null when `missingStd` is true — see lib/reports/pivot.ts's
+   * `canReallocate`: a partial %STD master must not produce a total that
+   * looks complete. */
+  totalReallocatedCost: number | null;
   residualQuantity: number;
   residualAmount: number;
   totalYield: number | null;
@@ -103,7 +98,16 @@ export interface OrderGroup {
    * 301's "J{sum}" — column J's own Sum-row total, the denominator its
    * "ปันใหม่ตาม STD" reallocation formula divides by). */
   totalStdPercent: number;
+  /** True when at least one output material has no %STD in effect for this
+   * order's month. Blocks reallocation and drives the on-screen warnings. */
   missingStd: boolean;
+}
+
+export interface MovementsResponse {
+  count: number;
+  /** แถวที่ถูกทิ้งเพราะ field จำเป็นไม่ครบ */
+  skipped: number;
+  data: RawMovementRow[];
 }
 
 export interface OrderStageReport {

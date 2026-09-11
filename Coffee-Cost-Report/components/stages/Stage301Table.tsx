@@ -30,7 +30,7 @@ export default function Stage301Table({
       residualAmount: acc.residualAmount + g.residualAmount,
       semiQuantity: acc.semiQuantity + g.semiQuantity,
       totalStdPercent: acc.totalStdPercent + g.totalStdPercent,
-      totalReallocatedCost: acc.totalReallocatedCost + g.totalReallocatedCost,
+      totalReallocatedCost: acc.totalReallocatedCost + (g.totalReallocatedCost ?? 0),
     }),
     { residualQuantity: 0, residualAmount: 0, semiQuantity: 0, totalStdPercent: 0, totalReallocatedCost: 0 },
   );
@@ -134,7 +134,7 @@ export default function Stage301Table({
         <tfoot>
           <tr>
             <td className={tfootCell} colSpan={4}>
-              รวมทั้งหมด ({report.groups.length} Order)
+              รวมทั้งหมด ({report.groups.length} Order · {report.groups.reduce((n, g) => n + g.materials.length, 0)} รายการ)
             </td>
             <td className={tfootNum}>{formatNumber(totals.residualQuantity)}</td>
             <td className={tfootNum}>{formatNumber(totals.residualAmount)}</td>

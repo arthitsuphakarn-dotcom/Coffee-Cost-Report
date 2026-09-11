@@ -74,10 +74,25 @@ export function computeOrderReport(stage: StagePrefix, rows: RawMovementRow[], s
       },
       null as string | null,
     )!;
+    // Resolve each output's %STD once, so the completeness check below and
+    // the reallocation further down can never disagree about what is known.
+    const stdByMaterial = new Map<string, number | null>();
+    for (const entry of outputEntries) {
+      stdByMaterial.set(entry.row.material, stdPercentAsOf(stdMaster, entry.row.material, orderMonth));
+    }
+    const missingStd = outputEntries.some((entry) => stdByMaterial.get(entry.row.material) === null);
     const totalStdPercent = outputEntries.reduce(
-      (sum, entry) => sum + (stdPercentAsOf(stdMaster, entry.row.material, orderMonth) ?? 0),
+      (sum, entry) => sum + (stdByMaterial.get(entry.row.material) ?? 0),
       0,
     );
+    /**
+     * Reallocating while any output still lacks a %STD would divide by a
+     * partial denominator, so the whole order's cost lands on whichever
+     * outputs happen to have a value — one 10% output would absorb 100% of it
+     * and show a price/kg an order of magnitude above the real one. A blank is
+     * the honest answer until the %STD master is complete for this order.
+     */
+    const canReallocate = !missingStd && totalStdPercent > 0;
 
     const inputLines: MaterialLine[] = inputEntries.map((entry) => ({
       material: entry.row.material,
@@ -95,11 +110,11 @@ export function computeOrderReport(stage: StagePrefix, rows: RawMovementRow[], s
     }));
 
     const outputLines: MaterialLine[] = outputEntries.map((entry) => {
-      const stdPercent = stdPercentAsOf(stdMaster, entry.row.material, orderMonth);
+      const stdPercent = stdByMaterial.get(entry.row.material) ?? null;
       if (stdPercent === null) materialsMissingStd.add(entry.row.material);
       const proportion = inputQuantityAbs > 0 ? entry.quantity / inputQuantityAbs : null;
       const pricePerKg = entry.quantity !== 0 ? entry.amount / entry.quantity : null;
-      const reallocatedCost = stdPercent !== null && totalStdPercent > 0 ? (inputAmountAbs * stdPercent) / totalStdPercent : null;
+      const reallocatedCost = canReallocate && stdPercent !== null ? (inputAmountAbs * stdPercent) / totalStdPercent : null;
       return {
         material: entry.row.material,
         materialDescription: entry.row.materialDescription,
@@ -139,14 +154,14 @@ export function computeOrderReport(stage: StagePrefix, rows: RawMovementRow[], s
       semiQuantity: outputEntries.reduce((sum, entry) => sum + entry.quantity, 0),
       materials: [...inputLines, ...outputLines, ...neutralLines],
       inputSemiQuantity: inputEntries.reduce((sum, entry) => sum + Math.abs(entry.quantity), 0),
-      totalReallocatedCost: outputLines.reduce((sum, line) => sum + (line.reallocatedCost ?? 0), 0),
+      totalReallocatedCost: canReallocate ? outputLines.reduce((sum, line) => sum + (line.reallocatedCost ?? 0), 0) : null,
       residualQuantity: entries.reduce((sum, entry) => sum + entry.quantity, 0),
       residualAmount: entries.reduce((sum, entry) => sum + entry.amount, 0),
       totalYield,
       totalLoss: 1 - totalYield,
       totalSettlement: outputLines.reduce((sum, line) => sum + (line.settlementRule ?? 0), 0),
       totalStdPercent,
-      missingStd: outputLines.some((line) => line.stdPercent === null),
+      missingStd,
     });
   }
 

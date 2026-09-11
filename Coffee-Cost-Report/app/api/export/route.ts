@@ -5,10 +5,11 @@ import { buildReportWorkbook } from "@/lib/exports/exportReport";
 import { buildReport302Workbook } from "@/lib/exports/exportReport302";
 import { buildReport303Workbook } from "@/lib/exports/exportReport303";
 import { buildReport305Workbook } from "@/lib/exports/exportReport305";
-import { monthKeyOf } from "@/lib/core/dates";
-import { loadLatestUpload, loadStdMaster, loadUnitWeightMaster } from "@/lib/persistence/store";
+import { loadStdMaster, loadUnitWeightMaster } from "@/lib/persistence/store";
+import { findMovements } from "@/lib/database/mb51Repository";
 import { STAGE_PREFIXES, type StagePrefix } from "@/lib/core/types";
 
+/** Export รายสเตจ — ใช้ findMovements() ตัวเดียวกับหน้าเว็บ */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const stageParam = searchParams.get("stage") ?? "301";
@@ -16,25 +17,24 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: `stage ต้องเป็นหนึ่งใน ${STAGE_PREFIXES.join(", ")}` }, { status: 400 });
   }
   const stage = stageParam as StagePrefix;
-  const from = searchParams.get("from");
-  const to = searchParams.get("to");
+  const from = searchParams.get("from") ?? undefined;
+  const to = searchParams.get("to") ?? undefined;
 
-  const [batch, stdMaster, unitWeightMaster] = await Promise.all([
-    loadLatestUpload(),
-    loadStdMaster(),
-    loadUnitWeightMaster(),
-  ]);
-  if (!batch) {
-    return NextResponse.json({ error: "ยังไม่มีข้อมูลที่อัปโหลด" }, { status: 404 });
+  let rows, stdMaster, unitWeightMaster;
+  try {
+    [{ rows }, stdMaster, unitWeightMaster] = await Promise.all([
+      findMovements({ stages: [stage], from, to }),
+      loadStdMaster(),
+      loadUnitWeightMaster(),
+    ]);
+  } catch (error) {
+    console.error(`[GET /api/export?stage=${stage}]`, error);
+    return NextResponse.json({ error: "ไม่สามารถโหลดข้อมูลได้ กรุณาลองใหม่อีกครั้ง" }, { status: 500 });
   }
 
-  const rows =
-    from && to
-      ? batch.rows.filter((r) => {
-          const mk = monthKeyOf(r.postingDate);
-          return mk >= from && mk <= to;
-        })
-      : batch.rows;
+  if (rows.length === 0) {
+    return NextResponse.json({ error: `ไม่พบข้อมูล ${stage} ในฐานข้อมูล` }, { status: 404 });
+  }
 
   const workbook =
     stage === "302"

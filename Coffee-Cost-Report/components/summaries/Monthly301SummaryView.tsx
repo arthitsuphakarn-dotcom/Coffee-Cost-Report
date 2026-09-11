@@ -4,6 +4,7 @@ import { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faChevronDown, faChevronRight, faFileExcel } from "@fortawesome/free-solid-svg-icons";
 import { formatNumber, formatPercent } from "@/lib/core/format";
+import { apiUrl } from "@/lib/core/basePath";
 import type { Monthly301Line, Monthly301Section, Monthly301Summary } from "@/lib/reports/monthly301Summary";
 import { td, tdNum, th, tfootCell, tfootNum } from "../shared/reportTableStyles";
 
@@ -246,7 +247,7 @@ export default function Monthly301SummaryView({
           <span className="font-normal text-xs text-text-muted">{rangeLabel(from, to)}</span>
         </button>
         <a
-          href={`/api/export-monthly-301?from=${from}&to=${to}`}
+          href={apiUrl(`/api/export-monthly-301?from=${from}&to=${to}`)}
           className="inline-flex items-center gap-1 rounded-full bg-green-700 px-1 py-1 text-sm font-medium text-white hover:bg-green-800"
         >
           <FontAwesomeIcon icon={faFileExcel} />

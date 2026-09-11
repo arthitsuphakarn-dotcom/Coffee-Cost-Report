@@ -71,6 +71,7 @@ export function parseMb51Workbook(buffer: ArrayBuffer): RawMovementRow[] {
       sLoc: normalizeString(row[colIndex["SLoc"]]) ?? "",
       mvt: normalizeString(row[colIndex["MvT"]]) ?? "",
       batch: (batchColIndex !== -1 ? normalizeString(row[batchColIndex]) : null) ?? "",
+      plant: "0328",
     });
   }
 
