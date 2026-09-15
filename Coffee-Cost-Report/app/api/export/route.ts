@@ -8,9 +8,13 @@ import { buildReport305Workbook } from "@/lib/exports/exportReport305";
 import { loadStdMaster, loadUnitWeightMaster } from "@/lib/persistence/store";
 import { findMovements } from "@/lib/database/mb51Repository";
 import { STAGE_PREFIXES, type StagePrefix } from "@/lib/core/types";
+import { rejectWithoutSession } from "@/lib/auth/session";
 
 /** Export รายสเตจ — ใช้ findMovements() ตัวเดียวกับหน้าเว็บ */
 export async function GET(request: Request) {
+  const unauthorized = await rejectWithoutSession();
+  if (unauthorized) return unauthorized;
+
   const { searchParams } = new URL(request.url);
   const stageParam = searchParams.get("stage") ?? "301";
   if (!STAGE_PREFIXES.includes(stageParam as StagePrefix)) {

@@ -2,7 +2,10 @@ import "server-only";
 
 import mysql, { type Pool } from "mysql2/promise";
 
-let pool: Pool | undefined;
+/** "DB" = ฐาน MB51 ของแอป, "CPR_ONE_DB" = ฐาน cpr_one (ตรวจ session ของผู้ใช้) */
+type EnvPrefix = "DB" | "CPR_ONE_DB";
+
+const pools: Partial<Record<EnvPrefix, Pool>> = {};
 
 function requiredEnv(name: string): string {
     const value = process.env[name];
@@ -12,37 +15,42 @@ function requiredEnv(name: string): string {
     return value;
 }
 
-function createPool(): Pool {
-    const port = Number(process.env.DB_PORT ?? "3306");
+function createPool(prefix: EnvPrefix): Pool {
+    const port = Number(process.env[`${prefix}_PORT`] ?? "3306");
     if (!Number.isInteger(port) || port < 1 || port > 65535) {
-        throw new Error("DB_PORT must be an integer between 1 and 65535");
+        throw new Error(`${prefix}_PORT must be an integer between 1 and 65535`);
     }
 
     return mysql.createPool({
-        host: requiredEnv("DB_HOST"),
+        host: requiredEnv(`${prefix}_HOST`),
         port,
-        database: requiredEnv("DB_NAME"),
-        user: requiredEnv("DB_USER"),
-        password: requiredEnv("DB_PASSWORD"),
+        database: requiredEnv(`${prefix}_NAME`),
+        user: requiredEnv(`${prefix}_USER`),
+        password: requiredEnv(`${prefix}_PASSWORD`),
         waitForConnections: true,
-        connectionLimit: Number(process.env.DB_CONNECTION_LIMIT ?? "10"),
+        connectionLimit: Number(process.env[`${prefix}_CONNECTION_LIMIT`] ?? "10"),
         queueLimit: 0,
         enableKeepAlive: true,
         keepAliveInitialDelay: 0,
-        ssl: process.env.DB_SSL === "true" ? {} : undefined,
+        ssl: process.env[`${prefix}_SSL`] === "true" ? {} : undefined,
     });
 }
 
+function getPool(prefix: EnvPrefix): Pool {
+    return (pools[prefix] ??= createPool(prefix));
+}
+
 export function getDbPool(): Pool {
-    if (!pool) {
-        pool = createPool();
-    }
-    return pool;
+    return getPool("DB");
+}
+
+export function getCprOneDbPool(): Pool {
+    return getPool("CPR_ONE_DB");
 }
 
 export async function closeDbPool(): Promise<void> {
-    if (pool) {
-        await pool.end();
-        pool = undefined;
+    for (const prefix of Object.keys(pools) as EnvPrefix[]) {
+        await pools[prefix]?.end();
+        delete pools[prefix];
     }
 }

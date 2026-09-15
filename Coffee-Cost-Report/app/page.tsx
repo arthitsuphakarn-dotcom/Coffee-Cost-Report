@@ -1,5 +1,6 @@
 import { loadStdMaster, loadUnitWeightMaster } from "@/lib/persistence/store";
 import { findMovements } from "@/lib/database/mb51Repository";
+import { requireCprOneUser } from "@/lib/auth/session";
 import type { RawMovementRow } from "@/lib/core/types";
 import ReportView from "@/components/ReportView";
 
@@ -19,6 +20,8 @@ async function loadMovements(): Promise<{ rows: RawMovementRow[]; skipped: numbe
 }
 
 export default async function Home() {
+  await requireCprOneUser();
+
   const [movements, stdMaster, unitWeightMaster] = await Promise.all([
     loadMovements(),
     loadStdMaster(),

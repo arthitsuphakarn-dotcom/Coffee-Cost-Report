@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 import { Mb51ParseError, parseMb51Workbook } from "@/lib/ingestion/parse";
 import { saveLatestUpload } from "@/lib/persistence/store";
+import { rejectWithoutSession } from "@/lib/auth/session";
 
 export async function POST(request: Request) {
+  const unauthorized = await rejectWithoutSession();
+  if (unauthorized) return unauthorized;
+
   const formData = await request.formData();
   const file = formData.get("file");
 

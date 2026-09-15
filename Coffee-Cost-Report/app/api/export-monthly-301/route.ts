@@ -5,9 +5,13 @@ import { buildMonthly301Workbook } from "@/lib/exports/exportMonthly301Summary";
 import { monthKeyOf } from "@/lib/core/dates";
 import { loadStdMaster } from "@/lib/persistence/store";
 import { findMovements } from "@/lib/database/mb51Repository";
+import { rejectWithoutSession } from "@/lib/auth/session";
 
 /** Export "สรุปรายเดือน 301" — ?from=&to=YYYY-MM ไม่ใส่ = ทุกเดือน */
 export async function GET(request: Request) {
+  const unauthorized = await rejectWithoutSession();
+  if (unauthorized) return unauthorized;
+
   const { searchParams } = new URL(request.url);
   const from = searchParams.get("from") ?? undefined;
   const to = searchParams.get("to") ?? undefined;

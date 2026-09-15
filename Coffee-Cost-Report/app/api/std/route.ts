@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
 import { deleteStdMasterEntry, setStdMasterEntry } from "@/lib/persistence/store";
+import { rejectWithoutSession } from "@/lib/auth/session";
 
 const MONTH_KEY_RE = /^\d{4}-\d{2}$/;
 
 export async function POST(request: Request) {
+  const unauthorized = await rejectWithoutSession();
+  if (unauthorized) return unauthorized;
+
   const body = await request.json().catch(() => null);
   const material = typeof body?.material === "string" ? body.material : null;
   const from = typeof body?.from === "string" ? body.from : null;
@@ -21,6 +25,9 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+  const unauthorized = await rejectWithoutSession();
+  if (unauthorized) return unauthorized;
+
   const body = await request.json().catch(() => null);
   const material = typeof body?.material === "string" ? body.material : null;
   const from = typeof body?.from === "string" ? body.from : null;

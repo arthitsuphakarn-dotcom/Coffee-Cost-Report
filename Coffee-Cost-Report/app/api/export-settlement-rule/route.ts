@@ -4,9 +4,13 @@ import { computeSettlementRuleReport } from "@/lib/reports/settlementRuleReport"
 import { buildSettlementRuleWorkbook } from "@/lib/exports/exportSettlementRuleReport";
 import { loadStdMaster } from "@/lib/persistence/store";
 import { findMovements } from "@/lib/database/mb51Repository";
+import { rejectWithoutSession } from "@/lib/auth/session";
 
 /** Export Settlement Rule — ใช้ 301 ทั้งหมด ไม่กรองเดือน (เป็น cross-tab รายปี) */
 export async function GET() {
+  const unauthorized = await rejectWithoutSession();
+  if (unauthorized) return unauthorized;
+
   let rows, stdMaster;
   try {
     [{ rows }, stdMaster] = await Promise.all([findMovements({ stages: ["301"] }), loadStdMaster()]);

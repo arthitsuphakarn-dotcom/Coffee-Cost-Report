@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { setUnitWeightMasterEntry } from "@/lib/persistence/store";
+import { rejectWithoutSession } from "@/lib/auth/session";
 
 export async function POST(request: Request) {
+  const unauthorized = await rejectWithoutSession();
+  if (unauthorized) return unauthorized;
+
   const body = await request.json().catch(() => null);
   const material = typeof body?.material === "string" ? body.material : null;
   const grams = typeof body?.grams === "number" ? body.grams : null;

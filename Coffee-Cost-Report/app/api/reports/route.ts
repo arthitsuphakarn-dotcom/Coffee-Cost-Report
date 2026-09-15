@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { STAGE_PREFIXES, type MovementsResponse, type StagePrefix } from "@/lib/core/types";
 import { findMovements } from "@/lib/database/mb51Repository";
+import { rejectWithoutSession } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
 
@@ -9,6 +10,9 @@ const LOAD_FAILED_MESSAGE = "ไม่สามารถโหลดข้อม
 /** ?stage=301 | ?stage=301,302 | ไม่ใส่ = ทุก stage | ?from=&to=YYYY-MM
  *  หน้าเว็บอ่าน DB ตรงใน Server Component ตัวนี้ไว้ให้ระบบอื่นเรียก */
 export async function GET(request: Request) {
+  const unauthorized = await rejectWithoutSession();
+  if (unauthorized) return unauthorized;
+
   const { searchParams } = new URL(request.url);
 
   const stageParam = searchParams.get("stage");
