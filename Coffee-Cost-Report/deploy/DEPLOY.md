@@ -25,9 +25,13 @@ Server โฮสต์หลายแอป แต่ละแอปต้อง
 
 | แอป | Port | URL path | ชื่อใน pm2 |
 |---|---|---|---|
-| Coffee Cost Report | 3000 | `/coffee-cost-report` | `coffee-cost-report` |
+| Coffee Cost Report (www) | 3000 | `/coffee-cost-report` | `coffee-cost-report` |
+| Coffee Cost Report (**www-dev**) | **3001** | `/coffee-cost-report` | `coffee-cost-report` |
 | phpMyAdmin | 8080 | `/phpMyAdmin/` | _(ไม่ใช่ Node)_ |
-| _(แอปถัดไป)_ | 3001 | | |
+
+**port ต้องตรงกับ ProxyPass ใน vhost ของเครื่องนั้น** ไม่ตรงคือ Apache ขึ้น 503
+(`AH00957 ... attempt to connect to 127.0.0.1:<port> failed` ใน `/var/log/apache2/error.log`)
+บน www-dev ให้ start ด้วย `PORT=3001 pm2 start ecosystem.config.js`
 
 ตรวจว่า port ว่างไหม: `sudo ss -lntp | grep 3000`
 ดูว่าตอนนี้มีแอป Node อะไรรันอยู่บ้าง: `pm2 list`
@@ -214,7 +218,7 @@ pm2 logs coffee-cost-report --lines 200 | grep "\[access\]"
 
 | อาการ | สาเหตุที่พบบ่อย |
 |---|---|
-| 503 Service Unavailable | Node ตาย → `pm2 list` / `pm2 logs coffee-cost-report` |
+| 503 Service Unavailable | Node ตาย (`pm2 list`) **หรือ port ไม่ตรงกับ ProxyPass** → ดู `sudo tail /var/log/apache2/error.log` ว่ามันพยายามต่อ port อะไร แล้วเทียบกับ `sudo ss -lntp \| grep next` |
 | 502 proxy error | ยังไม่ได้ `a2enmod proxy proxy_http` |
 | กดแล้วขึ้น 404 / โหลด CSS ไม่ได้ | `basePath` กับ ProxyPass ไม่ตรงกัน |
 | **เข้าได้โดยไม่ต้อง login** | process ที่ Apache ต่ออยู่เป็น build เก่า → `pm2 describe coffee-cost-report` ดู cwd/uptime และ `ps -ef \| grep next` ว่ามี process ค้างนอก pm2 ไหม |
