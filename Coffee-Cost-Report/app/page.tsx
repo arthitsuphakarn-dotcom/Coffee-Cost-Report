@@ -31,7 +31,7 @@ export default async function Home() {
 
   return (
     <>
-      <SessionConsoleLog username={user.username} fullName={`${user.name} ${user.surname}`.trim()} />
+      <SessionConsoleLog user={user} />
       <ReportView
         rows={movements.rows}
         skippedRows={movements.skipped}

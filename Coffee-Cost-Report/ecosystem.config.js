@@ -16,7 +16,7 @@ module.exports = {
         HOSTNAME: "127.0.0.1", 
         TZ: "Asia/Bangkok",
       },
-      time: true, 
+      time: true,ใ
       autorestart: true,
       max_restarts: 10,
       max_memory_restart: "512M",

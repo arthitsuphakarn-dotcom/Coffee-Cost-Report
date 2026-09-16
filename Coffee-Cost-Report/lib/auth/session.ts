@@ -17,7 +17,35 @@ import {
 
 const SESSION_TOKEN_PATTERN = /^[0-9a-f]{64}$/;
 
-const DEV_BYPASS_USER: CprOneUser = { username: "dev-bypass", name: "Dev", surname: "Bypass" };
+const DEV_BYPASS_USER: CprOneUser = {
+  username: "dev-bypass",
+  title: "",
+  name: "Dev",
+  surname: "Bypass",
+  employeeCode: "",
+  roleId: "",
+  roleAccessId: "",
+  assignedBy: "",
+  loginMethod: "password",
+  underPm: "",
+  status: "1",
+  edit: "",
+  session: { expiresAt: "", ipAddress: "", userAgent: "" },
+};
+
+/** "cprdev (Super Admin) emp=123 login=citrix role=1 access=2" */
+function describeUser(user: CprOneUser): string {
+  const fullName = [user.title, user.name, user.surname].filter(Boolean).join(" ");
+  return [
+    `${user.username}${fullName ? ` (${fullName})` : ""}`,
+    user.employeeCode && `emp=${user.employeeCode}`,
+    `login=${user.loginMethod}`,
+    user.roleId && `role=${user.roleId}`,
+    user.roleAccessId && `access=${user.roleAccessId}`,
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
 
 /** "POST /api/std · จาก 10.1.2.3" — path มาจาก header ที่ proxy.ts ใส่ไว้ */
 async function requestInfo(): Promise<string> {
@@ -36,7 +64,7 @@ async function requestInfo(): Promise<string> {
  *  (proxy.ts ดูแค่ว่ามี cookie) — cache ไว้ต่อ request จึง query และ log ครั้งเดียว */
 export const getCprOneUser = cache(async (): Promise<CprOneUser | null> => {
   if (isAuthBypassed()) {
-    accessLog(`${DEV_BYPASS_USER.username} (ข้ามการตรวจในโหมด dev) · ${await requestInfo()}`);
+    accessLog(`${describeUser(DEV_BYPASS_USER)} (ข้ามการตรวจในโหมด dev) · ${await requestInfo()}`);
     return DEV_BYPASS_USER;
   }
 
@@ -49,8 +77,7 @@ export const getCprOneUser = cache(async (): Promise<CprOneUser | null> => {
     const user = await findActiveSessionUser(createHash("sha256").update(token).digest("hex"));
 
     if (user) {
-      const fullName = `${user.name} ${user.surname}`.trim();
-      accessLog(`${user.username}${fullName ? ` (${fullName})` : ""} · ${await requestInfo()}`);
+      accessLog(`${describeUser(user)} · ${await requestInfo()}`);
     }
 
     return user;
