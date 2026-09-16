@@ -3,6 +3,7 @@ import { findMovements } from "@/lib/database/mb51Repository";
 import { requireCprOneUser } from "@/lib/auth/session";
 import type { RawMovementRow } from "@/lib/core/types";
 import ReportView from "@/components/ReportView";
+import SessionConsoleLog from "@/components/shared/SessionConsoleLog";
 
 // อ่าน MB51 ใหม่ทุก request (RPA ลงข้อมูลรายวัน)
 export const dynamic = "force-dynamic";
@@ -20,7 +21,7 @@ async function loadMovements(): Promise<{ rows: RawMovementRow[]; skipped: numbe
 }
 
 export default async function Home() {
-  await requireCprOneUser();
+  const user = await requireCprOneUser();
 
   const [movements, stdMaster, unitWeightMaster] = await Promise.all([
     loadMovements(),
@@ -29,12 +30,15 @@ export default async function Home() {
   ]);
 
   return (
-    <ReportView
-      rows={movements.rows}
-      skippedRows={movements.skipped}
-      loadError={movements.error}
-      initialStdMaster={stdMaster}
-      initialUnitWeightMaster={unitWeightMaster}
-    />
+    <>
+      <SessionConsoleLog username={user.username} fullName={`${user.name} ${user.surname}`.trim()} />
+      <ReportView
+        rows={movements.rows}
+        skippedRows={movements.skipped}
+        loadError={movements.error}
+        initialStdMaster={stdMaster}
+        initialUnitWeightMaster={unitWeightMaster}
+      />
+    </>
   );
 }
