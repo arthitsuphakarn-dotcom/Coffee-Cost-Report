@@ -2,20 +2,41 @@ import "server-only";
 
 import { createHash } from "node:crypto";
 import { cache } from "react";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { NextResponse } from "next/server";
 import { findActiveSessionUser, type CprOneUser } from "@/lib/database/userSessionRepository";
-import { CPR_ONE_SESSION_COOKIE, UNAUTHENTICATED_MESSAGE, cprOneLoginUrl, isAuthBypassed } from "./sessionConfig";
+import {
+  ACCESS_PATH_HEADER,
+  CPR_ONE_SESSION_COOKIE,
+  UNAUTHENTICATED_MESSAGE,
+  accessLog,
+  cprOneLoginUrl,
+  isAuthBypassed,
+} from "./sessionConfig";
 
 const SESSION_TOKEN_PATTERN = /^[0-9a-f]{64}$/;
 
 const DEV_BYPASS_USER: CprOneUser = { username: "dev-bypass", name: "Dev", surname: "Bypass" };
 
+/** "POST /api/std · จาก 10.1.2.3" — path มาจาก header ที่ proxy.ts ใส่ไว้ */
+async function requestInfo(): Promise<string> {
+  try {
+    const h = await headers();
+    const path = h.get(ACCESS_PATH_HEADER) ?? "(ไม่ทราบ path)";
+    const forwarded = h.get("x-forwarded-for") ?? "";
+    const ip = forwarded ? forwarded.split(",")[0].trim() : "(ไม่ทราบ ip)";
+    return `${path} · จาก ${ip}`;
+  } catch {
+    return "(อ่าน header ไม่ได้)";
+  }
+}
+
 /** ตรวจ cookie cpr_one_session กับตาราง user_sessions ของ cpr-one จริง
- *  (proxy.ts ดูแค่ว่ามี cookie) — cache ไว้ต่อ request จึง query ครั้งเดียว */
+ *  (proxy.ts ดูแค่ว่ามี cookie) — cache ไว้ต่อ request จึง query และ log ครั้งเดียว */
 export const getCprOneUser = cache(async (): Promise<CprOneUser | null> => {
   if (isAuthBypassed()) {
+    accessLog(`${DEV_BYPASS_USER.username} (ข้ามการตรวจในโหมด dev) · ${await requestInfo()}`);
     return DEV_BYPASS_USER;
   }
 
@@ -25,7 +46,14 @@ export const getCprOneUser = cache(async (): Promise<CprOneUser | null> => {
   }
 
   try {
-    return await findActiveSessionUser(createHash("sha256").update(token).digest("hex"));
+    const user = await findActiveSessionUser(createHash("sha256").update(token).digest("hex"));
+
+    if (user) {
+      const fullName = `${user.name} ${user.surname}`.trim();
+      accessLog(`${user.username}${fullName ? ` (${fullName})` : ""} · ${await requestInfo()}`);
+    }
+
+    return user;
   } catch (error) {
     // ตรวจไม่ได้ = ไม่ให้เข้า
     console.error("[auth] findActiveSessionUser", error);
