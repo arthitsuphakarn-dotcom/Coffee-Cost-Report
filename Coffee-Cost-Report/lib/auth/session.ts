@@ -27,7 +27,6 @@ const DEV_BYPASS_USER: CprOneUser = {
   roleAccessId: "",
   assignedBy: "",
   loginMethod: "password",
-  underPm: "",
   status: "1",
   edit: "",
   session: { expiresAt: "", ipAddress: "", userAgent: "" },

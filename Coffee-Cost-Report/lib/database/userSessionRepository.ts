@@ -14,7 +14,6 @@ interface SessionUserRecord extends RowDataPacket {
   U_ROLE_ID: DbValue;
   U_ROLE_ACCESS_ID: DbValue;
   U_ASSIGNED_BY: DbValue;
-  U_UNDER_PM: DbValue;
   STATUS: DbValue;
   EDIT: DbValue;
   expires_at: string;
@@ -35,7 +34,6 @@ export interface CprOneUser {
   /** "cognito" = บัญชีที่สร้างจากการ login ผ่าน Citrix */
   assignedBy: string;
   loginMethod: "citrix" | "password";
-  underPm: string;
   status: string;
   edit: string;
   session: {
@@ -72,7 +70,7 @@ export async function findActiveSessionUser(tokenHash: string): Promise<CprOneUs
   const [records] = await getCprOneDbPool().query<SessionUserRecord[]>(
     `
     SELECT u.U_USERNAME, u.U_TITLE, u.U_NAME, u.U_SURNAME, u.U_EMPLOYEE_CODE,
-           u.U_ROLE_ID, u.U_ROLE_ACCESS_ID, u.U_ASSIGNED_BY, u.U_UNDER_PM, u.STATUS, u.EDIT,
+           u.U_ROLE_ID, u.U_ROLE_ACCESS_ID, u.U_ASSIGNED_BY, u.STATUS, u.EDIT,
            DATE_FORMAT(s.expires_at, '%Y-%m-%d %H:%i:%s') AS expires_at,
            s.ip_address, s.user_agent
     FROM user_sessions s
@@ -100,7 +98,6 @@ export async function findActiveSessionUser(tokenHash: string): Promise<CprOneUs
     roleAccessId: text(record.U_ROLE_ACCESS_ID),
     assignedBy,
     loginMethod: assignedBy === "cognito" ? "citrix" : "password",
-    underPm: text(record.U_UNDER_PM),
     status: text(record.STATUS),
     edit: text(record.EDIT),
     session: {

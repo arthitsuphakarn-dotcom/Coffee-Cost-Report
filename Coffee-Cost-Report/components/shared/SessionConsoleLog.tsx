@@ -25,7 +25,6 @@ export default function SessionConsoleLog({ user }: { user: CprOneUser }) {
       assignedBy: user.assignedBy,
       roleId: user.roleId,
       roleAccessId: user.roleAccessId,
-      underPm: user.underPm,
       status: user.status,
       edit: user.edit,
       sessionExpiresAt: user.session.expiresAt,
