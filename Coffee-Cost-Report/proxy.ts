@@ -20,6 +20,8 @@ export function proxy(request: NextRequest) {
     return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
+  console.warn(`[auth] ไม่มี cookie ${CPR_ONE_SESSION_COOKIE} → ส่งไป login · ${request.method} ${pathname}`);
+
   if (pathname.startsWith("/api/")) {
     return NextResponse.json({ error: UNAUTHENTICATED_MESSAGE }, { status: 401 });
   }

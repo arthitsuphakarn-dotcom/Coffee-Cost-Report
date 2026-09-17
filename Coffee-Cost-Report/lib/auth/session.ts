@@ -68,15 +68,27 @@ export const getCprOneUser = cache(async (): Promise<CprOneUser | null> => {
   }
 
   const token = (await cookies()).get(CPR_ONE_SESSION_COOKIE)?.value;
-  if (!token || !SESSION_TOKEN_PATTERN.test(token)) {
+  if (!token) {
+    console.warn(`[auth] ไม่มี cookie ${CPR_ONE_SESSION_COOKIE} · ${await requestInfo()}`);
+    return null;
+  }
+  if (!SESSION_TOKEN_PATTERN.test(token)) {
+    console.warn(`[auth] cookie รูปแบบไม่ถูกต้อง (ยาว ${token.length} ตัว) · ${await requestInfo()}`);
     return null;
   }
 
   try {
-    const user = await findActiveSessionUser(createHash("sha256").update(token).digest("hex"));
+    const tokenHash = createHash("sha256").update(token).digest("hex");
+    const user = await findActiveSessionUser(tokenHash);
 
     if (user) {
       accessLog(`${describeUser(user)} · ${await requestInfo()}`);
+    } else {
+      // เอา prefix ไปค้นได้ด้วย WHERE token_hash LIKE '<prefix>%' ว่า token นี้มาจาก DB ไหน / หมดอายุหรือยัง
+      console.warn(
+        `[auth] ไม่พบ session ที่ยังไม่หมดอายุใน ${process.env.CPR_ONE_DB_HOST}/${process.env.CPR_ONE_DB_NAME}` +
+          ` (token_hash ขึ้นต้น ${tokenHash.slice(0, 12)}) · ${await requestInfo()}`
+      );
     }
 
     return user;
