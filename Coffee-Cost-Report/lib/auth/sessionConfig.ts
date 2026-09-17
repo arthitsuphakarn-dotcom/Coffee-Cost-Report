@@ -5,7 +5,7 @@ export const UNAUTHENTICATED_MESSAGE = "กรุณาเข้าสู่ร�
 /** proxy.ts ใส่ path ของ request ลง header นี้ให้ session.ts เอาไป log */
 export const ACCESS_PATH_HEADER = "x-ccr-path";
 
-const DEFAULT_LOGIN_URL = "https://www-dev.cpr-one.com/cpr-one/view/auth/login.php";
+const DEFAULT_LOGIN_URL = "https://www.cpr-one.com/cpr-one/view/auth/login.php";
 
 export function cprOneLoginUrl(): string {
   return process.env.CPR_ONE_LOGIN_URL || DEFAULT_LOGIN_URL;
