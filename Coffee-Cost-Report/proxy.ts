@@ -7,10 +7,7 @@ import {
   isAuthBypassed,
 } from "@/lib/auth/sessionConfig";
 
-/** ด่านแรกแบบ optimistic: ดูแค่ว่ามี cookie ของ cpr-one หรือไม่ (ไม่แตะ DB ตามคำแนะนำของ Next)
- *  การตรวจกับ user_sessions จริงอยู่ที่ lib/auth/session.ts ซึ่ง page และ route handler ทุกตัวเรียก */
 export function proxy(request: NextRequest) {
-  // pathname ไม่รวม basePath
   const { pathname } = request.nextUrl;
 
   if (isAuthBypassed() || request.cookies.has(CPR_ONE_SESSION_COOKIE)) {

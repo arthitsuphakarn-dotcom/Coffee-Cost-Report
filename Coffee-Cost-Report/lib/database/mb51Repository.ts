@@ -4,7 +4,7 @@ import type { RowDataPacket } from "mysql2/promise";
 import { STAGE_PREFIXES, type RawMovementRow, type StagePrefix } from "../core/types";
 import { getDbPool } from "./connection";
 
-const DEFAULT_TABLE_NAME = "mb51";
+const DEFAULT_TABLE_NAME = "mb51_0328";
 const DEFAULT_PLANT = "0328";
 const TABLE_NAME_PATTERN = /^[A-Za-z0-9_]+$/;
 const MONTH_KEY_PATTERN = /^\d{4}-\d{2}$/;

@@ -10,7 +10,6 @@ import {
   ACCESS_PATH_HEADER,
   CPR_ONE_SESSION_COOKIE,
   UNAUTHENTICATED_MESSAGE,
-  accessLog,
   cprOneLoginUrl,
   isAuthBypassed,
 } from "./sessionConfig";
@@ -32,20 +31,6 @@ const DEV_BYPASS_USER: CprOneUser = {
   session: { expiresAt: "", ipAddress: "", userAgent: "" },
 };
 
-/** "cprdev (Super Admin) emp=123 login=citrix role=1 access=2" */
-function describeUser(user: CprOneUser): string {
-  const fullName = [user.title, user.name, user.surname].filter(Boolean).join(" ");
-  return [
-    `${user.username}${fullName ? ` (${fullName})` : ""}`,
-    user.employeeCode && `emp=${user.employeeCode}`,
-    `login=${user.loginMethod}`,
-    user.roleId && `role=${user.roleId}`,
-    user.roleAccessId && `access=${user.roleAccessId}`,
-  ]
-    .filter(Boolean)
-    .join(" ");
-}
-
 /** "POST /api/std · จาก 10.1.2.3" — path มาจาก header ที่ proxy.ts ใส่ไว้ */
 async function requestInfo(): Promise<string> {
   try {
@@ -60,10 +45,9 @@ async function requestInfo(): Promise<string> {
 }
 
 /** ตรวจ cookie cpr_one_session กับตาราง user_sessions ของ cpr-one จริง
- *  (proxy.ts ดูแค่ว่ามี cookie) — cache ไว้ต่อ request จึง query และ log ครั้งเดียว */
+ *  (proxy.ts ดูแค่ว่ามี cookie) — cache ไว้ต่อ request จึง query ครั้งเดียว */
 export const getCprOneUser = cache(async (): Promise<CprOneUser | null> => {
   if (isAuthBypassed()) {
-    accessLog(`${describeUser(DEV_BYPASS_USER)} (ข้ามการตรวจในโหมด dev) · ${await requestInfo()}`);
     return DEV_BYPASS_USER;
   }
 
@@ -81,9 +65,7 @@ export const getCprOneUser = cache(async (): Promise<CprOneUser | null> => {
     const tokenHash = createHash("sha256").update(token).digest("hex");
     const user = await findActiveSessionUser(tokenHash);
 
-    if (user) {
-      accessLog(`${describeUser(user)} · ${await requestInfo()}`);
-    } else {
+    if (!user) {
       // เอา prefix ไปค้นได้ด้วย WHERE token_hash LIKE '<prefix>%' ว่า token นี้มาจาก DB ไหน / หมดอายุหรือยัง
       console.warn(
         `[auth] ไม่พบ session ที่ยังไม่หมดอายุใน ${process.env.CPR_ONE_DB_HOST}/${process.env.CPR_ONE_DB_NAME}` +

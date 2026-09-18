@@ -14,11 +14,3 @@ export function cprOneLoginUrl(): string {
 export function isAuthBypassed(): boolean {
   return process.env.NODE_ENV !== "production" && process.env.CPR_ONE_AUTH_BYPASS === "true";
 }
-
-/** log ว่าใครเข้ามาดูอะไร — ปิดด้วย AUTH_ACCESS_LOG=false */
-export function accessLog(message: string): void {
-  if (process.env.AUTH_ACCESS_LOG === "false") {
-    return;
-  }
-  console.log(`[access] ${message}`);
-}

@@ -38,4 +38,6 @@ export async function DELETE(request: Request) {
 
   const updated = await deleteStdMasterEntry(material, from);
   return NextResponse.json({ ok: true, stdMaster: updated });
+
+  
 }
