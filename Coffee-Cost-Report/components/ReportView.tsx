@@ -38,7 +38,7 @@ export default function ReportView({
   const [stdMaster, setStdMaster] = useState(initialStdMaster);
   const [unitWeightMaster, setUnitWeightMaster] = useState(initialUnitWeightMaster);
   const [activeStage, setActiveStage] = useState<StagePrefix>("301");
-  const [showDashboard, setShowDashboard] = useState(false);
+  const [showDashboard, setShowDashboard] = useState(true);
   const [settlementRuleOpen, setSettlementRuleOpen] = useState(false);
   const [stdManagerOpen, setStdManagerOpen] = useState(false);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
@@ -290,7 +290,6 @@ export default function ReportView({
           ไม่พบข้อมูล MB51 ในฐานข้อมูล
         </section>
       )}
-
       {hasAnyData && (
         <>
           <div className="pl-1 mb-4 overflow-x-auto border-b border-border overflow-y-hidden">
