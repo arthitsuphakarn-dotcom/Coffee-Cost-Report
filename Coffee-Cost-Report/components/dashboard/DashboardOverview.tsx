@@ -23,7 +23,7 @@ const VARIETY_LABEL: Record<Variety, string> = { arabica: "Arabica", robusta: "R
 
 const SUPPLIER_COLORS = ["#2563eb", "#0891b2", "#a855f7", "#84cc16", "#f97316", "#ec4899", "#64748b"];
 const GRID_COLOR = "var(--color-border)";
-const AXIS_STYLE = { fontSize: 12, fontFamily: "var(--font-mono)", fill: "var(--color-text-muted)" };
+const AXIS_STYLE = { fontSize: 13, fontFamily: "var(--font-mono)", fill: "var(--color-text-muted)" };
 
 /** Line `dot` renderer that draws the selected month's point larger, so the
  * cross-filter selection is visible on the line charts too, not just via
@@ -134,9 +134,9 @@ function KpiCard({
 function ChartCard({ title, caption, children }: { title: string; caption?: string; children: React.ReactNode }) {
   return (
     <div className="shadow-card rounded-xl border border-border bg-surface p-4">
-      <h3 className="mb-0.5 text-[0.85rem] font-semibold text-text">{title}</h3>
-      {caption && <p className="mb-2.5 text-[0.7rem] text-text-muted">{caption}</p>}
-      <div className="cursor-pointer" style={{ width: "100%", height: 220 }}>
+      <h3 className="mb-1 text-[1.05rem] font-bold text-text">{title}</h3>
+      {caption && <p className="mb-3 text-[0.85rem] text-text-muted">{caption}</p>}
+      <div className="cursor-pointer" style={{ width: "100%", height: 245 }}>
         {children}
       </div>
     </div>
@@ -176,12 +176,12 @@ function FilterDropdown<T extends string>({
   onChange: (value: T | "all") => void;
 }) {
   return (
-    <label className="flex items-center gap-1.5 text-xs text-text-muted">
+    <label className="flex items-center gap-2 text-sm font-medium text-text-muted">
       {label}
       <select
         value={value}
         onChange={(e) => onChange(e.target.value as T | "all")}
-        className="rounded border border-border bg-surface pl-2 pr-3 py-1 text-xs text-text outline-none focus:ring-1 focus:ring-roasting"
+        className="rounded-lg border border-border bg-surface pl-2.5 pr-4 py-1.5 text-sm font-medium text-text outline-none focus:ring-2 focus:ring-roasting"
       >
         <option value="all">ทั้งหมด</option>
         {options.map((o) => (
@@ -198,11 +198,11 @@ function FilterChip({ label, onClear }: { label: string; onClear: () => void }) 
   return (
     <button
       onClick={onClear}
-      className="inline-flex items-center gap-1.5 rounded-full border border-roasting bg-roasting-soft px-3 py-1 text-xs font-medium text-roasting-line hover:bg-roasting/20"
+      className="inline-flex items-center gap-1.5 rounded-full border border-roasting bg-roasting-soft px-3.5 py-1 text-xs font-semibold text-roasting-line hover:bg-roasting/20"
       title="คลิกเพื่อล้างตัวกรองนี้"
     >
       {label}
-      <span className="text-sm leading-none">×</span>
+      <span className="text-base font-bold leading-none">×</span>
     </button>
   );
 }
@@ -316,10 +316,10 @@ export default function DashboardOverview({ rows, dateRangeLabel }: { rows: RawM
           Coffee Roasting Performance &amp; Monitoring
         </h2> */}
 
-        <span className="rounded-full border border-border bg-surface-2 px-3.5 py-1 text-xs text-text">
+        <span className="rounded-full border border-border bg-surface-2 px-4 py-1.5 text-sm font-medium text-text">
           {dateRangeLabel}
           {report.months.length > 0 && (
-            <span className="ml-2 font-mono text-text-muted">
+            <span className="ml-2 font-mono font-semibold text-text-muted">
               ({report.months.length} เดือน)
             </span>
           )}
@@ -369,7 +369,7 @@ export default function DashboardOverview({ rows, dateRangeLabel }: { rows: RawM
 
       {hasActiveFilter && (
         <div className="mb-4 flex flex-wrap items-center gap-2">
-          <span className="text-[0.68rem] font-medium text-text-muted">กำลังกรอง:</span>
+          <span className="text-xs font-semibold text-text-muted">กำลังกรอง:</span>
           {selectedMonth && <FilterChip label={`เดือน: ${selectedMonth.monthLabel}`} onClear={() => setSelectedMonthKey(null)} />}
           {variety !== "all" && <FilterChip label={`สารกาแฟ: ${VARIETY_LABEL[variety]}`} onClear={() => setVariety("all")} />}
           {supplierFilter !== "all" && <FilterChip label={`Supplier: ${supplierFilter}`} onClear={() => setSupplierFilter("all")} />}
@@ -379,7 +379,7 @@ export default function DashboardOverview({ rows, dateRangeLabel }: { rows: RawM
               setVariety("all");
               setSupplierFilter("all");
             }}
-            className="text-[0.7rem] text-text-muted underline hover:text-text"
+            className="text-xs font-medium text-text-muted underline hover:text-text cursor-pointer ml-1"
           >
             ล้างตัวกรองทั้งหมด
           </button>
@@ -387,7 +387,7 @@ export default function DashboardOverview({ rows, dateRangeLabel }: { rows: RawM
       )}
 
       {report.filtersActive && (
-        <div className="mb-4 rounded-lg border border-roasting bg-roasting-soft p-3 text-xs text-roasting-line">
+        <div className="mb-4 rounded-lg border border-roasting bg-roasting-soft p-3.5 text-sm text-roasting-line">
           ตัวกรองสารกาแฟ และ Supplier ใช้ได้กับข้อมูล <strong>Preclean</strong> เท่านั้น — ตั้งแต่ขั้น Roasting
           เป็นต้นไปเป็นการผสมสารกาแฟหลายล็อตเข้าด้วยกัน และอาจมีมากกว่า 1 Supplier จึงไม่มีตัวเลขที่สามารถแยกได้จริง
         </div>
@@ -483,7 +483,7 @@ export default function DashboardOverview({ rows, dateRangeLabel }: { rows: RawM
               <CartesianGrid strokeDasharray="3 3" stroke={GRID_COLOR} />
               <XAxis dataKey="month" tick={AXIS_STYLE} />
               <YAxis tick={AXIS_STYLE} domain={[80, 100]} tickFormatter={(v) => `${v}%`} />
-              <Tooltip formatter={(v) => `${Number(v).toFixed(2)}%`} contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+              <Tooltip formatter={(v) => `${Number(v).toFixed(2)}%`} contentStyle={{ fontSize: 13, borderRadius: 8 }} />
               {selectedMonthShortLabel && <ReferenceLine x={selectedMonthShortLabel} stroke="var(--color-text)" strokeDasharray="4 3" strokeOpacity={0.55} />}
               <Line
                 type="monotone"
@@ -507,8 +507,8 @@ export default function DashboardOverview({ rows, dateRangeLabel }: { rows: RawM
               <CartesianGrid strokeDasharray="3 3" stroke={GRID_COLOR} />
               <XAxis dataKey="month" tick={AXIS_STYLE} />
               <YAxis tick={AXIS_STYLE} tickFormatter={(value) => Number(value).toLocaleString("en-US")}/>
-              <Tooltip formatter={(v) => `${formatNumber(Number(v))} kg`} contentStyle={{ fontSize: 12, borderRadius: 8 }} />
-              <Legend wrapperStyle={{ fontSize: 12, cursor: "pointer" }} onClick={(e) => toggleRM(String(e.dataKey))} />
+              <Tooltip formatter={(v) => `${formatNumber(Number(v))} kg`} contentStyle={{ fontSize: 13, borderRadius: 8 }} />
+              <Legend wrapperStyle={{ fontSize: 13, cursor: "pointer" }} onClick={(e) => toggleRM(String(e.dataKey))} />
               {selectedMonthShortLabel && <ReferenceLine x={selectedMonthShortLabel} stroke="var(--color-text)" strokeDasharray="4 3" strokeOpacity={0.55} />}
               <Line type="monotone" dataKey="arabica" name="Arabica" stroke="#92400e" strokeWidth={2.2} dot={monthAwareDot("#92400e", selectedMonthKey)} />
               <Line type="monotone" dataKey="robusta" name="Robusta" stroke="#e0a339" strokeWidth={2.2} dot={monthAwareDot("#e0a339", selectedMonthKey)} />
@@ -518,15 +518,15 @@ export default function DashboardOverview({ rows, dateRangeLabel }: { rows: RawM
 
         <ChartCard title="📃 %Yield 1 Trend By Supplier" caption="คลิกแท่งเพื่อกรองเดือน หรือคลิก legend เพื่อกรอง supplier">
           {report.suppliers.length === 0 ? (
-            <div className="flex h-full items-center justify-center text-xs text-text-muted">ไม่พบข้อมูล Batch/Supplier</div>
+            <div className="flex h-full items-center justify-center text-sm text-text-muted">ไม่พบข้อมูล Batch/Supplier</div>
           ) : (
             <ResponsiveContainer>
               <BarChart data={supplierTrendData} margin={{ top: 5, right: 10, bottom: 0, left: -10 }} onClick={handleChartClick}>
                 <CartesianGrid strokeDasharray="3 3" stroke={GRID_COLOR} />
                 <XAxis dataKey="month" tick={AXIS_STYLE} />
                 <YAxis tick={AXIS_STYLE} domain={[0, (max: number) => Math.max(100, Math.ceil(max / 10) * 10)]} tickFormatter={(v) => `${v}%`} />
-                <Tooltip formatter={(v) => `${Number(v).toFixed(2)}%`} contentStyle={{ fontSize: 12, borderRadius: 8 }} />
-                <Legend wrapperStyle={{ fontSize: 11, cursor: "pointer" }} onClick={(e) => toggleSupplier(String(e.dataKey))} />
+                <Tooltip formatter={(v) => `${Number(v).toFixed(2)}%`} contentStyle={{ fontSize: 13, borderRadius: 8 }} />
+                <Legend wrapperStyle={{ fontSize: 13, cursor: "pointer" }} onClick={(e) => toggleSupplier(String(e.dataKey))} />
                 {selectedMonthShortLabel && <ReferenceLine x={selectedMonthShortLabel} stroke="var(--color-text)" strokeDasharray="4 3" strokeOpacity={0.55} />}
                 <ReferenceLine y={100} stroke="var(--color-down)" strokeDasharray="2 2" strokeOpacity={0.6} />
                 {report.suppliers.map((s, i) => (

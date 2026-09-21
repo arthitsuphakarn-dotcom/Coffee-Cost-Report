@@ -2,15 +2,17 @@
 
 import { formatNumber, formatPercent } from "@/lib/core/format";
 import type { SummaryDashboardReport } from "@/lib/core/types";
-import { td, tdNum, th } from "../shared/reportTableStyles";
 
-// `th` bakes in bg-surface-2 — pairing it with a second bg-* utility on the
+// `dashTh` bakes in bg-surface-2 — pairing it with a second bg-* utility on the
 // same element is unreliable in Tailwind (whichever rule the compiler
 // emits last wins, not source order), so the colored band cells use their
-// own background-free base instead of layering on top of `th`.
-const thBase = "border border-border px-2 py-1.5 text-xs font-semibold text-text whitespace-nowrap";
-const bandTh = (bg: string, fg: string) => `${thBase} text-center ${bg} ${fg}`;
+// own background-free base instead of layering on top of `dashTh`.
+const thBase = "border border-border px-3 py-2 text-sm font-semibold text-text whitespace-nowrap";
+const bandTh = (bg: string, fg: string) => `${thBase} text-center font-bold ${bg} ${fg}`;
 const subTh = (bg: string, fg: string) => `${thBase} text-right ${bg} ${fg}`;
+const dashTh = "border border-border bg-surface-2 px-3 py-2 text-left text-sm font-semibold text-text whitespace-nowrap";
+const dashTd = "border border-border px-3 py-2 text-sm whitespace-nowrap font-mono";
+const dashTdNum = `${dashTd} text-right tabular-nums`;
 
 /**
  * One row per month, Preclean → Roasting → Packing, matching
@@ -46,17 +48,17 @@ export default function SummaryDashboardTable({
   return (
     <div>
       {excludedMaterials.length > 0 && (
-        <div className="mb-4 rounded-lg border border-packing bg-packing-soft p-3 text-xs text-packing-line">
+        <div className="mb-4 rounded-lg border border-packing bg-packing-soft p-3.5 text-sm text-packing-line">
           ไม่นับ FG code {excludedMaterials.join(", ")} ในยอด FG/%Yield 3 — ไม่อยู่ในตารางน้ำหนักที่ยืนยันแล้ว
           (lib/fgUnitWeights.ts) ตามสูตรที่ให้มา (ไม่ใช่ข้อมูลที่ขาด)
         </div>
       )}
       <div className="shadow-card overflow-x-auto rounded-xl border border-border bg-surface">
-        <table className="w-full border-collapse text-xs">
+        <table className="w-full border-collapse text-sm">
           <thead>
             <tr>
-              <th className={th} rowSpan={2}></th>
-              <th className={th} rowSpan={2}>
+              <th className={dashTh} rowSpan={2}></th>
+              <th className={dashTh} rowSpan={2}>
                 เดือน
               </th>
               <th className={bandTh("bg-preclean-soft", "text-preclean-line")} colSpan={4}>
@@ -91,31 +93,31 @@ export default function SummaryDashboardTable({
                 }`}
                 title={onSelectMonth ? "คลิกเพื่อกรองเดือนนี้" : undefined}
               >
-                <td className={`${td} text-text-muted`}>{i + 1}.</td>
-                <td className={`${td} font-sans`}>{m.monthLabel}</td>
-                <td className={tdNum}>{formatNumber(-m.preclean.inputQuantity)}</td>
-                <td className={tdNum}>{formatNumber(m.preclean.totalOutputQuantity)}</td>
-                <td className={tdNum}>{formatNumber(m.preclean.lot1OutputQuantity)}</td>
-                <td className={tdNum}>{formatPercent(m.preclean.yield)}</td>
-                <td className={tdNum}>{rc(formatNumber(-m.roasting.inputQuantity))}</td>
-                <td className={tdNum}>{rc(formatNumber(m.roasting.outputQuantity))}</td>
-                <td className={tdNum}>{rc(formatPercent(m.roasting.yield))}</td>
-                <td className={tdNum}>{rc(formatNumber(m.packing.outputWeightKg))}</td>
-                <td className={tdNum}>{rc(formatPercent(m.packing.yield))}</td>
+                <td className={`${dashTd} text-text-muted`}>{i + 1}.</td>
+                <td className={`${dashTd} font-sans font-medium`}>{m.monthLabel}</td>
+                <td className={dashTdNum}>{formatNumber(-m.preclean.inputQuantity)}</td>
+                <td className={dashTdNum}>{formatNumber(m.preclean.totalOutputQuantity)}</td>
+                <td className={dashTdNum}>{formatNumber(m.preclean.lot1OutputQuantity)}</td>
+                <td className={dashTdNum}>{formatPercent(m.preclean.yield)}</td>
+                <td className={dashTdNum}>{rc(formatNumber(-m.roasting.inputQuantity))}</td>
+                <td className={dashTdNum}>{rc(formatNumber(m.roasting.outputQuantity))}</td>
+                <td className={dashTdNum}>{rc(formatPercent(m.roasting.yield))}</td>
+                <td className={dashTdNum}>{rc(formatNumber(m.packing.outputWeightKg))}</td>
+                <td className={dashTdNum}>{rc(formatPercent(m.packing.yield))}</td>
               </tr>
             ))}
             <tr className="border-t-2 border-t-text-muted bg-surface-2 font-bold">
-              <td className={td}></td>
-              <td className={`${td} font-sans`}>Grand total</td>
-              <td className={tdNum}>{formatNumber(-report.total.preclean.inputQuantity)}</td>
-              <td className={tdNum}>{formatNumber(report.total.preclean.aOutputQuantity)}</td>
-              <td className={tdNum}>{formatNumber(report.total.preclean.lot1OutputQuantity)}</td>
-              <td className={tdNum}>{formatPercent(report.total.preclean.yield)}</td>
-              <td className={tdNum}>{rc(formatNumber(-report.total.roasting.inputQuantity))}</td>
-              <td className={tdNum}>{rc(formatNumber(report.total.roasting.outputQuantity))}</td>
-              <td className={tdNum}>{rc(formatPercent(report.total.roasting.yield))}</td>
-              <td className={tdNum}>{rc(formatNumber(report.total.packing.outputWeightKg))}</td>
-              <td className={tdNum}>{rc(formatPercent(report.total.packing.yield))}</td>
+              <td className={dashTd}></td>
+              <td className={`${dashTd} font-sans font-bold`}>Grand total</td>
+              <td className={dashTdNum}>{formatNumber(-report.total.preclean.inputQuantity)}</td>
+              <td className={dashTdNum}>{formatNumber(report.total.preclean.aOutputQuantity)}</td>
+              <td className={dashTdNum}>{formatNumber(report.total.preclean.lot1OutputQuantity)}</td>
+              <td className={dashTdNum}>{formatPercent(report.total.preclean.yield)}</td>
+              <td className={dashTdNum}>{rc(formatNumber(-report.total.roasting.inputQuantity))}</td>
+              <td className={dashTdNum}>{rc(formatNumber(report.total.roasting.outputQuantity))}</td>
+              <td className={dashTdNum}>{rc(formatPercent(report.total.roasting.yield))}</td>
+              <td className={dashTdNum}>{rc(formatNumber(report.total.packing.outputWeightKg))}</td>
+              <td className={dashTdNum}>{rc(formatPercent(report.total.packing.yield))}</td>
             </tr>
           </tbody>
         </table>
