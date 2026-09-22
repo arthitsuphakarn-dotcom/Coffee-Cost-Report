@@ -43,13 +43,13 @@ export default function MonthRangeFilter({
       : `${formatMonthLabel(from)} – ${formatMonthLabel(to)}`;
 
   return (
-    <details ref={detailsRef} className="group relative">
+    <details ref={detailsRef} className="group relative z-40">
       <summary className="shadow-card flex cursor-pointer list-none items-center gap-2 rounded-full border border-border bg-surface px-4 py-1.5 text-xs font-medium text-text hover:bg-surface-2 [&::-webkit-details-marker]:hidden">
         <span>{label}</span>
         <span className="text-text-muted transition-transform group-open:rotate-180">▾</span>
       </summary>
 
-      <div className="absolute right-0 z-10 mt-2 w-72 rounded-lg border border-border bg-surface p-3 shadow-lg">
+      <div className="absolute right-0 z-50 mt-2 w-72 rounded-lg border border-border bg-surface p-3 shadow-xl">
         <div className="mb-3 flex flex-wrap gap-1.5">
           <button
             type="button"

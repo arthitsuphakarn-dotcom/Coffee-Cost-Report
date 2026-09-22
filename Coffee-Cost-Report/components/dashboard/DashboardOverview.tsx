@@ -101,7 +101,7 @@ function KpiCard({
 }) {
   return (
     <div className={`shadow-card rounded-[10px] border border-border border-l-6 bg-surface p-3.5 ${KPI_BORDER[accent]}`}>
-      <div className="min-h-[1.7em] text-[0.7rem] font-semibold leading-snug text-text-muted">{label}</div>
+      <div className="min-h-[2.4em] text-sm font-bold leading-snug text-text-muted">{label}</div>
       <div className="flex items-baseline gap-2.0">
         <span className="font-mono text-[1.9rem] font-semibold text-text tabular-nums">{value}</span>
         <span className="text-[0.9rem] text-text-muted pl-2">{unit}</span>

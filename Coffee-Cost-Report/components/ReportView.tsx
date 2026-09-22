@@ -226,7 +226,7 @@ export default function ReportView({
         <p className="mt-1 text-sm text-text-muted">สำหรับบัญชีต้นทุนสินค้า</p>
       </header> */}
 
-      <section className="mb-6 pl-0 pr-3 px-5">
+      <section className="relative z-40 mb-6 pl-0 pr-3 px-5">
         {/* <h2 className="mb-3 text-sm font-semibold text-text">อัปโหลดข้อมูล MB51</h2> */}
         {/* <form onSubmit={handleUpload} className="flex flex-wrap items-center gap-3">
           <input
@@ -256,7 +256,7 @@ export default function ReportView({
         </p> */}
 
         {availableMonths.length > 0 && (
-          <div className="flex flex-wrap items-center justify-between gap-3 ">
+          <div className="relative z-40 flex flex-wrap items-center justify-between gap-3">
             {/* mt-4 border-t border-border pt-3 */}
             {/* <span className="text-xs text-text-muted">
               ข้อมูลครอบคลุมเดือน:{" "}
