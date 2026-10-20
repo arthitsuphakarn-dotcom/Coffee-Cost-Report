@@ -97,8 +97,8 @@ export interface Monthly301Section {
   quantityTotal: number;
   /** Σ amount over every line — same rationale as quantityTotal. */
   amountTotal: number;
-  /** Σ proportion over every line (green row counts as +1) — a literal
-   * column sum, does NOT net to zero. */
+  /** 100% − Σ output proportions (the green row's 100% minus every clean
+   * output's share) — the unaccounted remainder, shown on the "รวม" row. */
   proportionTotal: number;
   /** N — Σ proportion over outputs. */
   yield: number | null;
@@ -271,7 +271,7 @@ function buildSection(
 
   const quantityTotal = lines.reduce((s, l) => s + l.quantity, 0);
   const amountTotal = lines.reduce((s, l) => s + l.amount, 0);
-  const proportionTotal = lines.reduce((s, l) => s + (l.proportion ?? 0), 0);
+  const proportionTotal = inputQtyAbs > 0 ? 1 - yieldSum : 0;
 
   return {
     variety: cfg.variety,

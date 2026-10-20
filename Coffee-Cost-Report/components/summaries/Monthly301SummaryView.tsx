@@ -117,7 +117,7 @@ function VarietySection({ label, periods, sectionOf }: { label: string; periods:
           // export read the same computed fields instead of each deriving
           // their own (they drifted before — daily-reports/2026-08-31 R10).
           // Quantity/Amount land near zero (mass-balance, native SAP sign);
-          // สัดส่วน does not (green's proportion is stored as +100%).
+          // สัดส่วน = 100% − Σ output proportions.
           const quantityTotal = section?.quantityTotal ?? null;
           const amountTotal = section?.amountTotal ?? null;
           const proportionTotal = section?.proportionTotal ?? null;
