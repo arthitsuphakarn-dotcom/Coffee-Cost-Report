@@ -1,5 +1,6 @@
 import { monthKeyOf } from "../core/dates";
 import { FG_UNIT_WEIGHT_GRAMS } from "../core/fgUnitWeights";
+import { roundPartsKeepingTotal, roundToDisplayPercent } from "../core/percentRounding";
 import { stdPercentAsOf } from "../core/stdMaster";
 import type {
   MaterialLine,
@@ -94,7 +95,10 @@ export function computeOrderReport(stage: StagePrefix, rows: RawMovementRow[], s
      */
     const canReallocate = !missingStd && totalStdPercent > 0;
 
-    const inputLines: MaterialLine[] = inputEntries.map((entry) => ({
+    const inputProportions = roundPartsKeepingTotal(
+      inputEntries.map((entry) => (inputQuantityAbs > 0 ? Math.abs(entry.quantity) / inputQuantityAbs : null)),
+    );
+    const inputLines: MaterialLine[] = inputEntries.map((entry, i) => ({
       material: entry.row.material,
       materialDescription: entry.row.materialDescription,
       eun: entry.row.eun,
@@ -102,7 +106,7 @@ export function computeOrderReport(stage: StagePrefix, rows: RawMovementRow[], s
       quantity: entry.quantity,
       amount: entry.amount,
       pricePerKg: entry.quantity !== 0 ? entry.amount / entry.quantity : null,
-      proportion: inputQuantityAbs > 0 ? Math.abs(entry.quantity) / inputQuantityAbs : null,
+      proportion: inputProportions[i],
       stdPercent: null,
       reallocatedCost: null,
       reallocatedPricePerKg: null,
@@ -112,7 +116,10 @@ export function computeOrderReport(stage: StagePrefix, rows: RawMovementRow[], s
     const outputLines: MaterialLine[] = outputEntries.map((entry) => {
       const stdPercent = stdByMaterial.get(entry.row.material) ?? null;
       if (stdPercent === null) materialsMissingStd.add(entry.row.material);
-      const proportion = inputQuantityAbs > 0 ? entry.quantity / inputQuantityAbs : null;
+      const rawProportion = inputQuantityAbs > 0 ? entry.quantity / inputQuantityAbs : null;
+      // Rounded so Σ outputs = %Yield as displayed; Settlement Rule stays
+      // ROUND(H, 2) on the unrounded H, as in the source sheet.
+      const proportion = rawProportion !== null ? roundToDisplayPercent(rawProportion) : null;
       const pricePerKg = entry.quantity !== 0 ? entry.amount / entry.quantity : null;
       const reallocatedCost = canReallocate && stdPercent !== null ? (inputAmountAbs * stdPercent) / totalStdPercent : null;
       return {
@@ -127,7 +134,7 @@ export function computeOrderReport(stage: StagePrefix, rows: RawMovementRow[], s
         stdPercent,
         reallocatedCost,
         reallocatedPricePerKg: reallocatedCost !== null && entry.quantity !== 0 ? reallocatedCost / entry.quantity : null,
-        settlementRule: proportion !== null ? Math.round(proportion * 100) / 100 : null,
+        settlementRule: rawProportion !== null ? Math.round(rawProportion * 100) / 100 : null,
       };
     });
 
@@ -146,7 +153,7 @@ export function computeOrderReport(stage: StagePrefix, rows: RawMovementRow[], s
       settlementRule: null,
     }));
 
-    const totalYield = outputLines.reduce((sum, line) => sum + (line.proportion ?? 0), 0);
+    const totalYield = roundToDisplayPercent(outputLines.reduce((sum, line) => sum + (line.proportion ?? 0), 0));
     groups.push({
       order,
       totalInputQuantity,
@@ -158,7 +165,7 @@ export function computeOrderReport(stage: StagePrefix, rows: RawMovementRow[], s
       residualQuantity: entries.reduce((sum, entry) => sum + entry.quantity, 0),
       residualAmount: entries.reduce((sum, entry) => sum + entry.amount, 0),
       totalYield,
-      totalLoss: 1 - totalYield,
+      totalLoss: roundToDisplayPercent(1 - totalYield),
       totalSettlement: outputLines.reduce((sum, line) => sum + (line.settlementRule ?? 0), 0),
       totalStdPercent,
       missingStd,
@@ -181,7 +188,11 @@ export function computeOrder302Report(rows: RawMovementRow[]): Order302Report {
     const totalOutputQuantity = outputEntries.reduce((sum, entry) => sum + entry.quantity, 0);
     const inputQuantityAbs = Math.abs(totalInputQuantity);
     const outputQuantityAbs = Math.abs(totalOutputQuantity);
-    const toLine = (entry: AggregatedEntry, role: Order302Line["role"]): Order302Line => ({
+    // Blend shares rounded together so the input rows add up to exactly 100%.
+    const inputMixRatios = roundPartsKeepingTotal(
+      inputEntries.map((entry) => (inputQuantityAbs > 0 ? Math.abs(entry.quantity) / inputQuantityAbs : null)),
+    );
+    const toLine = (entry: AggregatedEntry, role: Order302Line["role"], mixRatio: number | null = null): Order302Line => ({
       material: entry.row.material,
       materialDescription: entry.row.materialDescription,
       eun: entry.row.eun,
@@ -189,12 +200,16 @@ export function computeOrder302Report(rows: RawMovementRow[]): Order302Report {
       quantity: entry.quantity,
       amount: entry.amount,
       pricePerKg: entry.quantity !== 0 ? entry.amount / entry.quantity : null,
-      mixRatio: role === "input" && inputQuantityAbs > 0 ? Math.abs(entry.quantity) / inputQuantityAbs : null,
+      mixRatio,
       outputRatio: outputQuantityAbs > 0 ? Math.abs(entry.quantity) / outputQuantityAbs : null,
     });
     const lines = [
-      ...inputEntries.map((entry) => toLine(entry, "input")),
-      ...outputEntries.map((entry) => toLine(entry, "output")),
+      ...inputEntries.map((entry, i) => toLine(entry, "input", inputMixRatios[i])),
+      // Output rows too: roasted qty ÷ ใส่สาร (= this order's %Yield) — user
+      // request 2026-10-20; the source sheet leaves column H blank there.
+      ...outputEntries.map((entry) =>
+        toLine(entry, "output", inputQuantityAbs > 0 ? Math.abs(entry.quantity) / inputQuantityAbs : null),
+      ),
       ...neutralEntries.map((entry) => toLine(entry, "neutral")),
     ];
     const yieldRatio = inputQuantityAbs > 0 ? outputQuantityAbs / inputQuantityAbs : null;

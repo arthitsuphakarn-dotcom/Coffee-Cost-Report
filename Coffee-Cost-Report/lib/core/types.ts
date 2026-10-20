@@ -126,7 +126,8 @@ export interface Order302Line {
   quantity: number;
   amount: number;
   pricePerKg: number | null;
-  /** สัดส่วนผสม — input rows only: |qty| ÷ total input qty (blend recipe ratio). */
+  /** สัดส่วนผสม — input + output rows: |qty| ÷ total input qty (blend recipe
+   * ratio on inputs; equals the order's %Yield on the output row). */
   mixRatio: number | null;
   /** สัดส่วน — all rows: |qty| ÷ total output qty. */
   outputRatio: number | null;

@@ -1,4 +1,5 @@
 import { monthKeyOf } from "../core/dates";
+import { roundToDisplayPercent } from "../core/percentRounding";
 import { stdPercentAsOf } from "../core/stdMaster";
 import type { RawMovementRow, StdMaster } from "../core/types";
 
@@ -14,13 +15,13 @@ import type { RawMovementRow, StdMaster } from "../core/types";
  * | src col | field                | formula (output row; green row 90)      |
  * |---------|----------------------|----------------------------------------|
  * | G Semi  | semiQuantity         | Σ output qty                           |
- * | H       | proportion           | outQty ÷ |inputQty|   (green row = 1)   |
+ * | H       | proportion           | outQty ÷ |inputQty|, rounded to 0.01%  |
  * | I       | pricePerKg           | amount ÷ qty                            |
  * | J % STD | stdPercent           | effective-dated master value as of this |
  * |         |                      | month (stdPercentAsOf) — ก้อน B         |
  * | K       | reallocatedCost      | |inputAmount| × stdPercent ÷ 100        |
  * | L       | reallocatedPricePerKg| reallocatedCost ÷ outQty                |
- * | M       | settlementRule       | ROUND(proportion, 2)                    |
+ * | M       | settlementRule       | ROUND(unrounded proportion, 2)          |
  * | N % Yield | section.yield      | Σ H over outputs                        |
  * | O % Loss  | section.loss       | 1 − yield                              |
  *
@@ -244,10 +245,15 @@ function buildSection(
     const outAmount = a.amount;
     semiQuantity += outQty;
 
-    const proportion = inputQtyAbs > 0 ? outQty / inputQtyAbs : null;
+    const rawProportion = inputQtyAbs > 0 ? outQty / inputQtyAbs : null;
+    // Stored at display precision (0.01%) so yield/loss/proportionTotal are
+    // built from the same numbers the user sees and the column ties out
+    // (e.g. 100 − 99.04 − 0.51 = 0.45, not 0.44 from unrounded values).
+    const proportion = rawProportion !== null ? roundToDisplayPercent(rawProportion) : null;
     const std = stdPercentAsOf(stdMaster, code, monthKey);
     const reallocatedCost = std !== null && inputAmountAbs > 0 ? (inputAmountAbs * std) / 100 : null;
-    const settlementRule = proportion !== null ? Math.round(proportion * 100) / 100 : null;
+    // Source column M is ROUND(H, 2) on the unrounded H — keep it that way.
+    const settlementRule = rawProportion !== null ? Math.round(rawProportion * 100) / 100 : null;
 
     if (proportion !== null) yieldSum += proportion;
     if (settlementRule !== null) settlementRuleTotal += settlementRule;
@@ -271,7 +277,9 @@ function buildSection(
 
   const quantityTotal = lines.reduce((s, l) => s + l.quantity, 0);
   const amountTotal = lines.reduce((s, l) => s + l.amount, 0);
-  const proportionTotal = inputQtyAbs > 0 ? 1 - yieldSum : 0;
+  // Re-round to strip float noise from summing the rounded proportions.
+  yieldSum = roundToDisplayPercent(yieldSum);
+  const proportionTotal = inputQtyAbs > 0 ? roundToDisplayPercent(1 - yieldSum) : 0;
 
   return {
     variety: cfg.variety,
@@ -284,7 +292,7 @@ function buildSection(
     amountTotal,
     proportionTotal,
     yield: canYield ? yieldSum : null,
-    loss: canYield ? 1 - yieldSum : null,
+    loss: canYield ? proportionTotal : null,
     settlementRuleTotal: anyOutput ? settlementRuleTotal : null,
   };
 }
