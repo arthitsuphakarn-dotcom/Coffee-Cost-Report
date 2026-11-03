@@ -17,8 +17,10 @@ import type { RawMovementRow, StdMaster } from "../core/types";
  *    not a separately re-derived one).
  *  - Average — the plain mean of that grade's monthly settlement-rule figures
  *    over the months that had output.
- *  - %Yield / %Loss rows per group — Σ settlement rule of the group's grades
- *    that month, and 100 − that (source row N/O).
+ *  - %Yield / %Loss rows per group — Σ of the grade rows above them (source
+ *    M sum row, not N's Σ H), and 100 − that; the Average column likewise.
+ *    Grade figures are held at whole %, the precision the popup and export
+ *    show, so the block always adds up on screen.
  *
  * Deliberately shows RAW numbers, not normalized to sum-to-100 per month
  * (PM+BA decision, docs/monthly-301-summary-and-std-effective-date-plan.md
@@ -65,10 +67,11 @@ export interface SettlementRuleSection {
   greenDescription: string;
   materials: SettlementRuleMaterialRow[];
   /** %Yield per month = Σ settlement rule of this section's grades (source
-   * row N); null when the variety produced nothing that month. */
+   * M sum row); null when the variety produced nothing that month. */
   yieldByMonth: Record<string, number | null>;
-  /** %Loss per month = 100 − yield (source row O). */
+  /** %Loss per month = 100 − yield. */
   lossByMonth: Record<string, number | null>;
+  /** Σ of the grades' Average figures. */
   yieldAverage: number | null;
   lossAverage: number | null;
 }
@@ -88,6 +91,11 @@ const SECTION_CONFIG = [
 
 function average(values: number[]): number | null {
   return values.length > 0 ? values.reduce((s, v) => s + v, 0) / values.length : null;
+}
+
+function sumOrNull(values: (number | null)[]): number | null {
+  const present = values.filter((v): v is number => v !== null);
+  return present.length > 0 ? present.reduce((s, v) => s + v, 0) : null;
 }
 
 export function computeSettlementRuleReport(rows: RawMovementRow[], stdMaster: StdMaster): SettlementRuleReport {
@@ -111,27 +119,33 @@ export function computeSettlementRuleReport(rows: RawMovementRow[], stdMaster: S
       for (const mk of months) {
         const section = monthlyByKey.get(mk)?.sections.find((s) => s.variety === cfg.variety);
         const line = section?.lines.find((l) => l.material === code);
-        monthlyVals[mk] = line?.settlementRule != null ? line.settlementRule * 100 : null;
+        // Already whole % (M = ROUND(H, 2)); Math.round only strips float noise.
+        monthlyVals[mk] = line?.settlementRule != null ? Math.round(line.settlementRule * 100) : null;
       }
       const active = months.map((mk) => monthlyVals[mk]).filter((v): v is number => v !== null);
+      const avg = average(active);
       return {
         material: code,
         materialDescription: descByMaterial.get(code) ?? code,
         stdPercent: latestStdPercent(stdMaster, code),
         monthly: monthlyVals,
-        average: average(active),
+        average: avg !== null ? Math.round(avg) : null,
       };
     });
 
+    // Summed from the grade rows rather than taken from the section's Σ H
+    // yield: each grade is rounded to a whole % on its own, so Σ H drifts ±1
+    // from the rows above it (e.g. 97 + 2 shown over a %Yield of 100).
+    // Months the variety produced nothing stay blank (section.yield gate).
     const yieldByMonth: Record<string, number | null> = {};
     const lossByMonth: Record<string, number | null> = {};
     for (const mk of months) {
       const section = monthlyByKey.get(mk)?.sections.find((s) => s.variety === cfg.variety);
-      yieldByMonth[mk] = section?.yield != null ? section.yield * 100 : null;
-      lossByMonth[mk] = section?.loss != null ? section.loss * 100 : null;
+      const y = section?.yield != null ? sumOrNull(materials.map((m) => m.monthly[mk])) : null;
+      yieldByMonth[mk] = y;
+      lossByMonth[mk] = y !== null ? 100 - y : null;
     }
-    const activeYield = months.map((mk) => yieldByMonth[mk]).filter((v): v is number => v !== null);
-    const activeLoss = months.map((mk) => lossByMonth[mk]).filter((v): v is number => v !== null);
+    const yieldAverage = sumOrNull(materials.map((m) => m.average));
 
     return {
       variety: cfg.variety,
@@ -141,8 +155,8 @@ export function computeSettlementRuleReport(rows: RawMovementRow[], stdMaster: S
       materials,
       yieldByMonth,
       lossByMonth,
-      yieldAverage: average(activeYield),
-      lossAverage: average(activeLoss),
+      yieldAverage,
+      lossAverage: yieldAverage !== null ? 100 - yieldAverage : null,
     };
   });
 
