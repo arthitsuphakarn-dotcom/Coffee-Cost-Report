@@ -43,24 +43,17 @@ export function buildSettlementRuleWorkbook(report: SettlementRuleReport): XLSX.
     }
 
     aoa.push([
-      "% Yield",
+      "",
       "",
       null,
-      ...report.months.map((mk) => pctCell(section.yieldByMonth[mk] ?? null)),
-      pctCell(section.yieldAverage),
-    ]);
-    aoa.push([
-      "% Loss",
-      "",
-      null,
-      ...report.months.map((mk) => pctCell(section.lossByMonth[mk] ?? null)),
-      pctCell(section.lossAverage),
+      ...report.months.map((mk) => pctCell(section.totalByMonth[mk] ?? null)),
+      pctCell(section.totalAverage),
     ]);
     aoa.push([]);
   }
 
   aoa.push(["%STD (ล่าสุด)", "Sheet > 301 > Summary สูตร > %STD ช่อง J — ค่าล่าสุดที่มีการเปลี่ยนแปลง"]);
-  aoa.push(["สัดส่วนเกิดจริง", "Sheet > 301 > Summary สูตร > Settlement Rule ช่อง M — ตัวเลขจริง ไม่ปรับให้รวม = 100"]);
+  aoa.push(["สัดส่วนเกิดจริง", "Sheet > 301 > Summary สูตร > Settlement Rule ช่อง M"]);
 
   const worksheet = XLSX.utils.aoa_to_sheet(aoa);
   worksheet["!cols"] = [{ wch: 12 }, { wch: 34 }, { wch: 10 }, ...report.months.map(() => ({ wch: 7 })), { wch: 9 }];

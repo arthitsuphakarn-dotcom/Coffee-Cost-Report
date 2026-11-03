@@ -1,4 +1,5 @@
 import { computeMonthly301Summary } from "./monthly301Summary";
+import { roundPartsKeepingTotal } from "../core/percentRounding";
 import { latestStdPercent } from "../core/stdMaster";
 import type { RawMovementRow, StdMaster } from "../core/types";
 
@@ -11,23 +12,19 @@ import type { RawMovementRow, StdMaster } from "../core/types";
  * output grade with:
  *  - %STD (ล่าสุด) — the latest entry in the effective-dated %STD history
  *    (sheet 301 col J's hand-entered master value; lib/stdMaster.ts).
- *  - สัดส่วนเกิดจริง — the actual settlement rule per calendar month (sheet 301
- *    col M = ROUND(qty ÷ green-input qty, 2)), sourced directly from
- *    lib/monthly301Summary.ts (ก้อน A/C decision: officially the same number,
- *    not a separately re-derived one).
- *  - Average — the plain mean of that grade's monthly settlement-rule figures
- *    over the months that had output.
- *  - %Yield / %Loss rows per group — Σ of the grade rows above them (source
- *    M sum row, not N's Σ H), and 100 − that; the Average column likewise.
- *    Grade figures are held at whole %, the precision the popup and export
- *    show, so the block always adds up on screen.
+ *  - สัดส่วนเกิดจริง — each grade's share of the variety's total clean output
+ *    per calendar month (qty ÷ Σ clean output qty ≡ M ÷ ΣM of sheet 301), so
+ *    a month's grades add up to 100. Quantities come from
+ *    lib/monthly301Summary.ts.
+ *  - Average — the plain mean of that grade's monthly figures over the months
+ *    the variety had output.
+ *  - A total row per group (no label, like the source) — Σ of the grade rows
+ *    above it, monthly and Average: 100 for every month with output.
  *
- * Deliberately shows RAW numbers, not normalized to sum-to-100 per month
- * (PM+BA decision, docs/monthly-301-summary-and-std-effective-date-plan.md
- * §4.1): a month's %Yield/%Loss for Preclean is real data the cost-accounting
- * team needs to see, not something to hide by rescaling to 100. This means
- * monthly totals will NOT sum to exactly 100 (typically ~98) — different from
- * this report's first version, which normalized on purpose.
+ * Normalized to 100 per month at the user's request (2026-11-03), matching
+ * the accounting team's own report — this reverses the 2026-08-31 PM+BA
+ * decision to show raw ROUND(qty ÷ green-input, 2) figures with %Yield/%Loss
+ * rows (docs/monthly-301-summary-and-std-effective-date-plan.md §4.1).
  *
  * Variety of an output row is read straight from its material code, the same
  * split lib/summaryDashboard.ts already uses (54002340 = อาราบิก้า,
@@ -52,10 +49,10 @@ export interface SettlementRuleMaterialRow {
   materialDescription: string;
   /** Latest %STD master value for this grade, or null if none entered. */
   stdPercent: number | null;
-  /** monthKey ("YYYY-MM") -> settlement rule % (0..100, raw/un-normalized);
+  /** monthKey ("YYYY-MM") -> whole % share of the variety's clean output;
    * null when the variety produced nothing that month. */
   monthly: Record<string, number | null>;
-  /** Plain mean over months with output; null when nothing produced. */
+  /** Plain mean over months with output, whole %; null when nothing produced. */
   average: number | null;
 }
 
@@ -66,14 +63,11 @@ export interface SettlementRuleSection {
   greenCode: string;
   greenDescription: string;
   materials: SettlementRuleMaterialRow[];
-  /** %Yield per month = Σ settlement rule of this section's grades (source
-   * M sum row); null when the variety produced nothing that month. */
-  yieldByMonth: Record<string, number | null>;
-  /** %Loss per month = 100 − yield. */
-  lossByMonth: Record<string, number | null>;
+  /** Σ of the grade rows per month (100 with output); null when the variety
+   * produced nothing that month. */
+  totalByMonth: Record<string, number | null>;
   /** Σ of the grades' Average figures. */
-  yieldAverage: number | null;
-  lossAverage: number | null;
+  totalAverage: number | null;
 }
 
 export interface SettlementRuleReport {
@@ -98,6 +92,16 @@ function sumOrNull(values: (number | null)[]): number | null {
   return present.length > 0 ? present.reduce((s, v) => s + v, 0) : null;
 }
 
+/**
+ * 0..1 shares -> whole % that still add up to 100. Rounding each grade on its
+ * own would let the total row read 99 or 101 under grades the user is adding
+ * up, so the report is rounded here, at whole % (what the popup and export
+ * show), and the total row is summed from these figures.
+ */
+function toWholePercents(shares: (number | null)[]): (number | null)[] {
+  return roundPartsKeepingTotal(shares, 100).map((v) => (v === null ? null : Math.round(v * 100)));
+}
+
 export function computeSettlementRuleReport(rows: RawMovementRow[], stdMaster: StdMaster): SettlementRuleReport {
   const rows301 = rows.filter((r) => r.order?.startsWith("301"));
   const monthly = computeMonthly301Summary(rows301, stdMaster);
@@ -114,38 +118,34 @@ export function computeSettlementRuleReport(rows: RawMovementRow[], stdMaster: S
   const sections: SettlementRuleSection[] = SECTION_CONFIG.map((cfg) => {
     const cleanCodes = cfg.cleanCodes as readonly string[];
 
-    const materials: SettlementRuleMaterialRow[] = cleanCodes.map((code) => {
-      const monthlyVals: Record<string, number | null> = {};
-      for (const mk of months) {
-        const section = monthlyByKey.get(mk)?.sections.find((s) => s.variety === cfg.variety);
-        const line = section?.lines.find((l) => l.material === code);
-        // Already whole % (M = ROUND(H, 2)); Math.round only strips float noise.
-        monthlyVals[mk] = line?.settlementRule != null ? Math.round(line.settlementRule * 100) : null;
-      }
-      const active = months.map((mk) => monthlyVals[mk]).filter((v): v is number => v !== null);
-      const avg = average(active);
-      return {
-        material: code,
-        materialDescription: descByMaterial.get(code) ?? code,
-        stdPercent: latestStdPercent(stdMaster, code),
-        monthly: monthlyVals,
-        average: avg !== null ? Math.round(avg) : null,
-      };
-    });
-
-    // Summed from the grade rows rather than taken from the section's Σ H
-    // yield: each grade is rounded to a whole % on its own, so Σ H drifts ±1
-    // from the rows above it (e.g. 97 + 2 shown over a %Yield of 100).
-    // Months the variety produced nothing stay blank (section.yield gate).
-    const yieldByMonth: Record<string, number | null> = {};
-    const lossByMonth: Record<string, number | null> = {};
+    const monthlyByCode = cleanCodes.map(() => ({}) as Record<string, number | null>);
     for (const mk of months) {
       const section = monthlyByKey.get(mk)?.sections.find((s) => s.variety === cfg.variety);
-      const y = section?.yield != null ? sumOrNull(materials.map((m) => m.monthly[mk])) : null;
-      yieldByMonth[mk] = y;
-      lossByMonth[mk] = y !== null ? 100 - y : null;
+      const qty = cleanCodes.map((code) => section?.lines.find((l) => l.material === code)?.quantity ?? 0);
+      const outputTotal = qty.reduce((s, q) => s + q, 0);
+      const shares = toWholePercents(qty.map((q) => (outputTotal > 0 ? q / outputTotal : null)));
+      shares.forEach((v, i) => (monthlyByCode[i][mk] = v));
     }
-    const yieldAverage = sumOrNull(materials.map((m) => m.average));
+
+    // Each month's grades add up to exactly 100, so these means do too before
+    // rounding — rounding them the same way keeps the Average total at 100.
+    const averages = toWholePercents(
+      monthlyByCode.map((vals) => {
+        const avg = average(months.map((mk) => vals[mk]).filter((v): v is number => v !== null));
+        return avg !== null ? avg / 100 : null;
+      }),
+    );
+
+    const materials: SettlementRuleMaterialRow[] = cleanCodes.map((code, i) => ({
+      material: code,
+      materialDescription: descByMaterial.get(code) ?? code,
+      stdPercent: latestStdPercent(stdMaster, code),
+      monthly: monthlyByCode[i],
+      average: averages[i],
+    }));
+
+    const totalByMonth: Record<string, number | null> = {};
+    for (const mk of months) totalByMonth[mk] = sumOrNull(materials.map((m) => m.monthly[mk]));
 
     return {
       variety: cfg.variety,
@@ -153,10 +153,8 @@ export function computeSettlementRuleReport(rows: RawMovementRow[], stdMaster: S
       greenCode: cfg.greenCode,
       greenDescription: descByMaterial.get(cfg.greenCode) ?? GREEN_FALLBACK_DESC[cfg.greenCode] ?? cfg.greenCode,
       materials,
-      yieldByMonth,
-      lossByMonth,
-      yieldAverage,
-      lossAverage: yieldAverage !== null ? 100 - yieldAverage : null,
+      totalByMonth,
+      totalAverage: sumOrNull(materials.map((m) => m.average)),
     };
   });
 

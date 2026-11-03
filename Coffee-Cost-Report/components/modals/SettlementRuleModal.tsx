@@ -135,28 +135,14 @@ export default function SettlementRuleModal({
                       ))}
 
                       <tr className="border-t-2 border-t-zinc-400 bg-zinc-100 font-bold">
-                        <td className={td} colSpan={2}>
-                          % Yield
-                        </td>
+                        <td className={td} colSpan={2}></td>
                         <td className={tdNum}></td>
                         {report!.months.map((mk) => (
                           <td key={mk} className={tdNum}>
-                            {pct(section.yieldByMonth[mk] ?? null)}
+                            {pct(section.totalByMonth[mk] ?? null)}
                           </td>
                         ))}
-                        <td className={`${tdNum} !bg-zinc-200`}>{pct(section.yieldAverage)}</td>
-                      </tr>
-                      <tr className="bg-zinc-100 font-bold">
-                        <td className={td} colSpan={2}>
-                          % Loss
-                        </td>
-                        <td className={tdNum}></td>
-                        {report!.months.map((mk) => (
-                          <td key={mk} className={tdNum}>
-                            {pct(section.lossByMonth[mk] ?? null)}
-                          </td>
-                        ))}
-                        <td className={`${tdNum} !bg-zinc-200`}>{pct(section.lossAverage)}</td>
+                        <td className={`${tdNum} !bg-zinc-200`}>{pct(section.totalAverage)}</td>
                       </tr>
                     </tbody>
                   </table>
@@ -168,8 +154,7 @@ export default function SettlementRuleModal({
                   <span className="font-semibold">%STD (ล่าสุด)</span> Sheet &gt; 301 &gt; Summary สูตร &gt; %STD ช่อง J — ค่าล่าสุดที่มีการเปลี่ยนแปลง
                 </p>
                 <p>
-                  <span className="font-semibold">สัดส่วนเกิดจริง</span> Sheet &gt; 301 &gt; Summary สูตร &gt; Settlement Rule ช่อง M —
-                  ตัวเลขจริง ไม่ปรับให้รวม = 100
+                  <span className="font-semibold">สัดส่วนเกิดจริง</span> Sheet &gt; 301 &gt; Summary สูตร &gt; Settlement Rule ช่อง M
                 </p>
               </div>
             </div>

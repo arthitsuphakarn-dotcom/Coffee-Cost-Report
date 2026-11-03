@@ -15,14 +15,15 @@ export function roundToDisplayPercent(fraction: number): number {
 }
 
 /**
- * Round a set of parts to 0.01% so they still add up to their own rounded
- * total (100% for a full breakdown). Largest-remainder method: every part is
- * rounded down, then the units lost to rounding go back one each to the parts
- * with the biggest dropped remainder — no part moves more than 0.01% from its
- * true value. Nulls stay null and don't take part.
+ * Round a set of parts to 0.01% (or to 1/`units`, e.g. 100 for whole %) so
+ * they still add up to their own rounded total (100% for a full breakdown).
+ * Largest-remainder method: every part is rounded down, then the units lost
+ * to rounding go back one each to the parts with the biggest dropped
+ * remainder — no part moves more than one unit from its true value. Nulls
+ * stay null and don't take part.
  */
-export function roundPartsKeepingTotal(parts: (number | null)[]): (number | null)[] {
-  const scaled = parts.map((p) => (p === null ? null : p * UNITS));
+export function roundPartsKeepingTotal(parts: (number | null)[], units = UNITS): (number | null)[] {
+  const scaled = parts.map((p) => (p === null ? null : p * units));
   const floors = scaled.map((v) => (v === null ? null : Math.floor(v)));
   const target = Math.round(scaled.reduce<number>((s, v) => s + (v ?? 0), 0));
   let remaining = target - floors.reduce<number>((s, v) => s + (v ?? 0), 0);
@@ -37,5 +38,5 @@ export function roundPartsKeepingTotal(parts: (number | null)[]): (number | null
     remaining--;
   }
 
-  return floors.map((v) => (v === null ? null : v / UNITS));
+  return floors.map((v) => (v === null ? null : v / units));
 }
